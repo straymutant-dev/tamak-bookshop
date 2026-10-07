@@ -15,7 +15,6 @@ const ACTION_LABELS: Record<string, string> = {
   vendor_order_approved: 'Approved vendor order',
   vendor_order_rejected: 'Rejected vendor credit order',
   vendor_repayment_recorded: 'Recorded vendor repayment',
-  shift_closed: 'Closed shift',
 };
 
 function labelFor(action: string) {

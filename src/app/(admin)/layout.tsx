@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import AdminHeader from '@/components/admin/AdminHeader';
 import Footer from '@/components/store/Footer';
+import LiveRefresh from '@/components/ui/LiveRefresh';
+import NotificationToasts from '@/components/notifications/NotificationToasts';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const headersList = await headers();
@@ -17,7 +19,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect('/auth/login?redirectTo=/admin/inventory');
+  // Admin-host login (rewritten to /admin-login by the middleware).
+  if (!user) redirect('/login');
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -25,11 +28,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     .eq('id', user.id)
     .single();
 
-  if (profile?.role !== 'admin' && profile?.role !== 'staff') redirect('/');
+  // Not staff/admin: send them to the customer site, not "/" on this host.
+  if (profile?.role !== 'admin' && profile?.role !== 'staff') redirect(crossHostBase);
 
   return (
     <div className="flex min-h-screen flex-col bg-surface-cream">
       <AdminHeader fullName={profile?.full_name ?? null} role={profile?.role ?? null} />
+      <LiveRefresh tables={['orders', 'profiles', 'books', 'repayment_requests', 'credit_repayments', 'audit_logs', 'notifications']} />
+      <NotificationToasts />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-8">{children}</main>
       <Footer crossHostBase={crossHostBase} userRole={profile?.role ?? null} />
     </div>

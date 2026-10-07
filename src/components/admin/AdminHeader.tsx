@@ -15,10 +15,9 @@ import { signOutAction } from '@/lib/actions/auth';
 const ALL_LINKS = [
   { label: 'Dashboard', href: '/admin/dashboard' },
   { label: 'POS', href: '/admin/pos' },
-  { label: 'Shift', href: '/admin/shift' },
   { label: 'Inventory', href: '/admin/inventory' },
+  { label: 'Daily sales', href: '/admin/sales' },
   { label: 'Orders', href: '/admin/orders' },
-  { label: 'Approvals', href: '/admin/approvals' },
   { label: 'Repayments', href: '/admin/repayments' },
   { label: 'Vendors', href: '/admin/vendors', adminOnly: true },
   { label: 'Staff', href: '/admin/staff', adminOnly: true },

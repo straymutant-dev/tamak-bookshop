@@ -134,20 +134,8 @@ export default function PosTerminal({ books, cashierName }: { books: Book[]; cas
             Order <span className="font-medium text-ink">{completedSale.orderNumber}</span> —{' '}
             {formatGHS(completedSale.totalPesewas)}
           </p>
-          <div className="flex justify-center gap-3">
+          <div className="flex justify-center gap-3">           
             <button
-              onClick={async () => {
-                try {
-                  await logReceiptPrint(completedSale.orderId);
-                } catch (e) {
-                  console.error('Failed to log receipt print:', e);
-                }
-                window.print();
-              }}
-              className="rounded-md bg-brand-green px-4 py-2 text-sm font-medium text-white"
-            >
-              Print receipt
-            </button>            <button
               onClick={async () => {
                 try {
                   await logReceiptPrint(completedSale.orderId);

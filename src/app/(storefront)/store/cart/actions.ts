@@ -11,8 +11,27 @@ interface CheckoutItem {
 export async function submitOrder(formData: FormData) {
   const supabase = await createClient();
 
-  const contactName = String(formData.get('contactName') ?? '').trim();
-  const contactPhone = String(formData.get('contactPhone') ?? '').trim();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let contactName = String(formData.get('contactName') ?? '').trim();
+  let contactPhone = String(formData.get('contactPhone') ?? '').trim();
+
+  // Signed-in customers order under the name on their account, not whatever was typed.
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, full_name, phone')
+      .eq('id', user.id)
+      .single();
+
+    if (profile?.role === 'vendor') {
+      throw new Error('Wholesale accounts place orders from the wholesale cart (/vendor/cart)');
+    }
+    if (profile?.full_name) contactName = profile.full_name;
+    if (!contactPhone && profile?.phone) contactPhone = profile.phone;
+  }
   const paymentMethod = String(formData.get('paymentMethod') ?? '');
   const paymentReference = String(formData.get('paymentReference') ?? '').trim() || null;
   const itemsRaw = String(formData.get('items') ?? '[]');
@@ -56,10 +75,6 @@ export async function submitOrder(formData: FormData) {
 
   const subtotalPesewas = orderItems.reduce((sum, i) => sum + i.line_total_pesewas, 0);
   const totalPesewas = subtotalPesewas; // no separate delivery/tax modeled yet
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   const orderNumber = `TB-${Date.now().toString(36).toUpperCase()}-${crypto
     .randomUUID()

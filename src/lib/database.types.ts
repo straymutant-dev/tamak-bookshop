@@ -196,6 +196,117 @@ export type Database = {
           },
         ];
       };
+      repayment_requests: {
+        Row: {
+          amount_pesewas: number;
+          contact_phone: string | null;
+          created_at: string;
+          id: string;
+          notes: string | null;
+          payment_method: Database["public"]["Enums"]["pay_method"];
+          payment_reference: string | null;
+          repayment_id: string | null;
+          review_note: string | null;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          status: string;
+          vendor_id: string;
+        };
+        Insert: {
+          amount_pesewas: number;
+          contact_phone?: string | null;
+          created_at?: string;
+          id?: string;
+          notes?: string | null;
+          payment_method: Database["public"]["Enums"]["pay_method"];
+          payment_reference?: string | null;
+          repayment_id?: string | null;
+          review_note?: string | null;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          status?: string;
+          vendor_id: string;
+        };
+        Update: {
+          amount_pesewas?: number;
+          contact_phone?: string | null;
+          created_at?: string;
+          id?: string;
+          notes?: string | null;
+          payment_method?: Database["public"]["Enums"]["pay_method"];
+          payment_reference?: string | null;
+          repayment_id?: string | null;
+          review_note?: string | null;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          status?: string;
+          vendor_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "repayment_requests_repayment_id_fkey";
+            columns: ["repayment_id"];
+            isOneToOne: false;
+            referencedRelation: "credit_repayments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "repayment_requests_reviewed_by_fkey";
+            columns: ["reviewed_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "repayment_requests_vendor_id_fkey";
+            columns: ["vendor_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      notifications: {
+        Row: {
+          body: string | null;
+          created_at: string;
+          id: string;
+          kind: string;
+          link: string | null;
+          read_at: string | null;
+          title: string;
+          user_id: string;
+        };
+        Insert: {
+          body?: string | null;
+          created_at?: string;
+          id?: string;
+          kind?: string;
+          link?: string | null;
+          read_at?: string | null;
+          title: string;
+          user_id: string;
+        };
+        Update: {
+          body?: string | null;
+          created_at?: string;
+          id?: string;
+          kind?: string;
+          link?: string | null;
+          read_at?: string | null;
+          title?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       login_attempts: {
         Row: {
           email: string;
@@ -321,6 +432,8 @@ export type Database = {
         Row: {
           cheque_cleared: boolean | null;
           cheque_number: string | null;
+          cheque_received_at: string | null;
+          customer_notified_at: string | null;
           client_operation_id: string | null;
           contact_name: string | null;
           contact_phone: string | null;
@@ -342,6 +455,8 @@ export type Database = {
         Insert: {
           cheque_cleared?: boolean | null;
           cheque_number?: string | null;
+          cheque_received_at?: string | null;
+          customer_notified_at?: string | null;
           client_operation_id?: string | null;
           contact_name?: string | null;
           contact_phone?: string | null;
@@ -363,6 +478,8 @@ export type Database = {
         Update: {
           cheque_cleared?: boolean | null;
           cheque_number?: string | null;
+          cheque_received_at?: string | null;
+          customer_notified_at?: string | null;
           client_operation_id?: string | null;
           contact_name?: string | null;
           contact_phone?: string | null;
@@ -484,6 +601,60 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      approve_vendor_credit_order: {
+        Args: { p_order_id: string; p_fulfillment: Database["public"]["Enums"]["fulfillment_type"] };
+        Returns: undefined;
+      };
+      confirm_repayment_request: {
+        Args: {
+          p_request_id: string;
+          p_amount_pesewas?: number;
+          p_method?: Database["public"]["Enums"]["pay_method"];
+          p_reference?: string;
+          p_cheque_cleared?: boolean;
+        };
+        Returns: undefined;
+      };
+      confirm_vendor_order_payment: {
+        Args: {
+          p_order_id: string;
+          p_method: Database["public"]["Enums"]["pay_method"];
+          p_reference: string;
+          p_fulfillment: Database["public"]["Enums"]["fulfillment_type"];
+          p_cheque_cleared?: boolean;
+        };
+        Returns: undefined;
+      };
+      record_vendor_repayment: {
+        Args: {
+          p_vendor_id: string;
+          p_amount_pesewas: number;
+          p_method: Database["public"]["Enums"]["pay_method"];
+          p_reference: string;
+          p_notes?: string;
+          p_cheque_cleared?: boolean;
+        };
+        Returns: string;
+      };
+      bounce_walkin_cheque: { Args: { p_phone: string; p_cheque_number: string; p_note?: string }; Returns: undefined };
+      clear_walkin_cheque: { Args: { p_phone: string; p_cheque_number: string }; Returns: number };
+      mark_walkin_customer_notified: { Args: { p_phone: string; p_cheque_number: string }; Returns: undefined };
+      receive_walkin_cheque: { Args: { p_order_ids: string[]; p_cheque_number: string }; Returns: number };
+      mark_notifications_read: { Args: { p_ids?: string[] }; Returns: undefined };
+      pos_vendor_sale: {
+        Args: {
+          p_vendor_id: string | null;
+          p_walkin_name: string | null;
+          p_walkin_phone: string | null;
+          p_items: Json;
+          p_method: Database["public"]["Enums"]["pay_method"];
+          p_reference?: string;
+        };
+        Returns: Json;
+      };
+      reject_repayment_request: { Args: { p_request_id: string; p_note?: string }; Returns: undefined };
+      reject_vendor_order: { Args: { p_order_id: string; p_reason?: string }; Returns: undefined };
+      require_staff_or_admin: { Args: Record<PropertyKey, never>; Returns: string };
       current_user_role: {
         Args: Record<PropertyKey, never>;
         Returns: Database["public"]["Enums"]["user_role"];
@@ -504,10 +675,10 @@ export type Database = {
       order_kind: "storefront_client" | "storefront_vendor" | "counter_pos";
       order_status: "pending" | "in_transit" | "completed";
       pay_method: "cash" | "mobile_money" | "bank_transfer" | "credit" | "cheque";
-      pay_status: "paid" | "credit_pending" | "credit_approved" | "partially_paid";
+      pay_status: "paid" | "payment_pending" | "credit_pending" | "credit_approved" | "partially_paid";
       return_condition: "resellable" | "damaged";
       user_role: "client" | "vendor" | "staff" | "admin";
-      vendor_approval: "not_applicable" | "pending" | "approved" | "rejected";
+      vendor_approval: "not_applicable" | "pending" | "approved" | "rejected" | "frozen";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -636,10 +807,10 @@ export const Constants = {
       order_kind: ["storefront_client", "storefront_vendor", "counter_pos"],
       order_status: ["pending", "in_transit", "completed"],
       pay_method: ["cash", "mobile_money", "bank_transfer", "credit", "cheque"],
-      pay_status: ["paid", "credit_pending", "credit_approved", "partially_paid"],
+      pay_status: ["paid", "payment_pending", "credit_pending", "credit_approved", "partially_paid"],
       return_condition: ["resellable", "damaged"],
       user_role: ["client", "vendor", "staff", "admin"],
-      vendor_approval: ["not_applicable", "pending", "approved", "rejected"],
+      vendor_approval: ["not_applicable", "pending", "approved", "rejected", "frozen"],
     },
   },
 } as const;

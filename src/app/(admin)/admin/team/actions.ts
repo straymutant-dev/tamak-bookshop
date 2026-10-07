@@ -37,6 +37,13 @@ export async function inviteAdmin(formData: FormData) {
   
   if (error) throw new Error(error.message);
 
+    if (!data.user?.id) throw new Error('Invite sent but no user was returned');
+  const { error: roleError } = await service
+    .from('profiles')
+    .update({ role: 'admin' })
+    .eq('id', data.user.id);
+  if (roleError) throw new Error(`Invite sent but role could not be set: ${roleError.message}`);
+
   const { error: auditError } = await service.from('audit_logs').insert({
     staff_id: actorId,
     action: 'admin_invited',

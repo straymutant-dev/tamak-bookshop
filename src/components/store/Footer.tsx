@@ -31,7 +31,16 @@ export default function Footer({
           : '/';
 
   const isLoggedIn = userRole !== null;
-  const links = [...FOOTER_LINKS, ...(isLoggedIn ? [] : LOGGED_OUT_LINKS)];
+  const accountLinks = isLoggedIn
+    ? [
+        {
+          label: userRole === 'admin' || userRole === 'staff' ? 'Admin portal' : 'Dashboard',
+          href: dashboardHref,
+        },
+        ...(userRole === 'client' || userRole === 'vendor' ? [{ label: 'My orders', href: '/account/orders' }] : []),
+      ]
+    : [];
+  const links = [...accountLinks, ...FOOTER_LINKS, ...(isLoggedIn ? [] : LOGGED_OUT_LINKS)];
 
   return (
     <footer className="border-t border-border-beige bg-surface-card">

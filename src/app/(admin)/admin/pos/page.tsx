@@ -1,6 +1,7 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
 import { createClient } from '@/lib/supabase/server';
 import PosTerminal from './PosTerminal';
+import PosTabs from './PosTabs';
 
 export default async function PosPage() {
   const supabase = await createClient();
@@ -20,7 +21,9 @@ export default async function PosPage() {
   return (
     <div>
       <h1 className="mb-1 text-xl font-semibold text-ink">Counter sale</h1>
-      <p className="mb-6 text-sm text-ink-muted">Cashier: {profile?.full_name}</p>
+      <p className="mb-4 text-sm text-ink-muted">Cashier: {profile?.full_name}</p>
+
+      <PosTabs active="retail" />
 
       {error && (
         <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">

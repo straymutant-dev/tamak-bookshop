@@ -113,10 +113,23 @@ export default function RepaymentsClient({ vendors }: { vendors: VendorOption[] 
                 </select>
               </label>
 
-              {(paymentMethod === 'mobile_money' || paymentMethod === 'cheque') && (
-                <label className="flex flex-col gap-1 text-sm">
-                  {paymentMethod === 'cheque' ? 'Cheque number' : 'Transaction ID'}
-                  <input name="paymentReference" className="rounded-md border border-brand-sage px-3 py-2" />
+              <label className="flex flex-col gap-1 text-sm">
+                {paymentMethod === 'cheque'
+                  ? 'Cheque number'
+                  : paymentMethod === 'cash'
+                  ? 'Receipt number (optional)'
+                  : 'Payment reference / transaction ID'}
+                <input
+                  name="paymentReference"
+                  required={paymentMethod !== 'cash'}
+                  className="rounded-md border border-brand-sage px-3 py-2"
+                />
+              </label>
+
+              {paymentMethod === 'cheque' && (
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" name="chequeCleared" />
+                  The cheque has cleared
                 </label>
               )}
 

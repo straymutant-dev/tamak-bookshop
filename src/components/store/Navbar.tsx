@@ -40,7 +40,22 @@ export default function Navbar({
       ? '/account/dashboard'
       : '/';
 
+  // Account links first, so a logged-in user can always get back to their dashboard.
+  const accountLinks: { label: string; href: string }[] = [];
+  if (isLoggedIn) {
+    accountLinks.push({
+      label: userRole === 'admin' || userRole === 'staff' ? 'Admin portal' : 'Dashboard',
+      href: dashboardHref,
+    });
+    if (userRole === 'client' || userRole === 'vendor') {
+      accountLinks.push({ label: 'My orders', href: '/account/orders' });
+    }
+  }
+
+  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+
   const NAV_LINKS = [
+    ...accountLinks,
     { label: 'Books catalog', href: resolveHref('/store') },
     ...(isLoggedIn ? [] : [{ label: 'Wholesale accounts', href: '/auth/register?type=vendor' }]),
     { label: 'Track order', href: resolveHref('/store/track') },
@@ -52,9 +67,12 @@ export default function Navbar({
   if (isLoggedIn) {
     extraItems.push({ label: 'Home', href: '/' });
     extraItems.push({ label: 'Track an order', href: resolveHref('/store/track') });
-    if (userRole === 'client') {
-      extraItems.push({ label: 'My dashboard', href: '/account/dashboard' });
+    if (userRole === 'client' || userRole === 'vendor') {
+      extraItems.push({ label: 'My dashboard', href: dashboardHref });
       extraItems.push({ label: 'Order history', href: '/account/orders' });
+    }
+    if (userRole === 'vendor') {
+      extraItems.push({ label: 'Wholesale cart', href: '/vendor/cart' });
     }
     if (userRole === 'staff' || userRole === 'admin') {
       extraItems.push({ label: 'Admin dashboard', href: '/admin/dashboard' });
@@ -70,9 +88,13 @@ export default function Navbar({
           <BrandMark className="h-8 sm:h-9 md:h-10" />
         </Link>
 
-        <nav className="hidden items-center gap-8 text-sm text-ink md:flex">
+        <nav className="hidden items-center gap-5 text-sm text-ink md:flex lg:gap-8">
           {NAV_LINKS.map((link) => (
-            <Link key={link.href} href={link.href} className="hover:text-brand-green">
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`hover:text-brand-green ${isActive(link.href) ? 'font-medium text-brand-green' : ''}`}
+            >
               {link.label}
             </Link>
           ))}
@@ -121,7 +143,12 @@ export default function Navbar({
         
         <nav className="flex flex-col gap-1 text-sm text-ink">
           {NAV_LINKS.map((link) => (
-            <Link key={link.href} href={link.href} className="py-2" onClick={() => setMenuOpen(false)}>
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`py-2 ${isActive(link.href) ? 'font-medium text-brand-green' : ''}`}
+              onClick={() => setMenuOpen(false)}
+            >
               {link.label}
             </Link>
           ))}

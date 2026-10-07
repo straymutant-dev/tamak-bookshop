@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { formatGHS } from '@/lib/currency';
 import OrderManageModal from './OrderManageModal';
 import ReprintButton from './ReprintButton';
+import OrderNumberButton from '@/components/orders/OrderNumberButton';
 
 interface OrderRow {
   id: string;
@@ -59,7 +60,7 @@ export default function OrdersTable({
             {orders.map((order) => (
               <tr key={order.id} className="border-t border-border-beige">
                 <td className="px-4 py-3">
-                  <div className="font-medium text-ink">{order.order_number}</div>
+                  <OrderNumberButton orderId={order.id} orderNumber={order.order_number} />
                   <div className="text-xs text-ink-muted">
                     {new Date(order.created_at).toLocaleDateString()}
                   </div>

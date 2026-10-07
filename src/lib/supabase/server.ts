@@ -2,6 +2,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import { sessionCookieOptions } from "./cookieOptions";
 
 /**
  * Supabase client for use in Server Components and Server Actions.
@@ -30,12 +31,7 @@ export async function createClient() {
           }
         },
       },
-      cookieOptions: {
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24 * 7,
-      },
+      cookieOptions: sessionCookieOptions(),
     }
   );
 }

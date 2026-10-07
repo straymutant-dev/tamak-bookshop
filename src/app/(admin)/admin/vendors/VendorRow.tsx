@@ -1,6 +1,7 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
 'use client';
 
+import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import type { VendorProfile } from '@/lib/types';
 import { formatGHS } from '@/lib/currency';
@@ -42,7 +43,14 @@ export default function VendorRow({ vendor, isFirst }: { vendor: VendorProfile; 
     startTransition(async () => {
       try {
         await setVendorStatus(vendor.id, status);
-        showToast(status === 'approved' ? 'Vendor approved' : 'Vendor frozen');
+        if (status === 'approved' && vendor.credit_limit_pesewas === 0) {
+          setEditingLimit(true);
+          showToast('Vendor approved — now set a credit limit');
+        } else {
+          showToast(
+            status === 'approved' ? 'Vendor approved' : status === 'frozen' ? 'Vendor frozen' : 'Vendor rejected'
+          );
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to update status');
       }
@@ -55,7 +63,12 @@ export default function VendorRow({ vendor, isFirst }: { vendor: VendorProfile; 
         <div className="flex items-start gap-3">
           <UserAvatar fullName={vendor.full_name} className="mt-0.5 h-9 w-9 text-sm" asLink={false} />
           <div>
-            <div className="text-sm font-medium text-ink">{vendor.business_name ?? vendor.full_name}</div>
+            <Link
+              href={`/admin/vendors/${vendor.id}`}
+              className="text-sm font-medium text-ink hover:text-brand-green hover:underline"
+            >
+              {vendor.business_name ?? vendor.full_name}
+            </Link>
             <div className="text-xs text-ink-muted">
               {vendor.full_name} · {vendor.phone}
             </div>
@@ -99,8 +112,11 @@ export default function VendorRow({ vendor, isFirst }: { vendor: VendorProfile; 
                 </button>
               </form>
             ) : (
-              <button onClick={() => setEditingLimit(true)} className="text-ink hover:text-brand-green">
-                {formatGHS(vendor.credit_limit_pesewas)}
+              <button
+                onClick={() => setEditingLimit(true)}
+                className="text-ink underline decoration-dotted underline-offset-4 hover:text-brand-green"
+              >
+                {vendor.credit_limit_pesewas === 0 ? 'Set limit' : formatGHS(vendor.credit_limit_pesewas)}
               </button>
             )}
           </div>
@@ -115,6 +131,9 @@ export default function VendorRow({ vendor, isFirst }: { vendor: VendorProfile; 
         </div>
 
         <div className="flex gap-3 text-xs">
+          <Link href={`/admin/vendors/${vendor.id}`} className="text-ink hover:text-brand-green">
+            Orders &amp; balance →
+          </Link>
           {vendor.vendor_status !== 'approved' && (
             <button onClick={() => handleStatus('approved')} disabled={isPending} className="text-brand-green">
               Approve

@@ -1,22 +1,24 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import PasswordInput from '@/components/ui/PasswordInput';
+import { useToast } from '@/components/ui/ToastContext';
 import { updatePassword } from './actions';
 
 export default function PasswordForm() {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const { showToast } = useToast();
 
   function handleSubmit(formData: FormData) {
     setError(null);
-    setSaved(false);
     startTransition(async () => {
       try {
         await updatePassword(formData);
-        setSaved(true);
+        showToast('Password updated');
+        formRef.current?.reset();
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to update password');
       }
@@ -24,9 +26,8 @@ export default function PasswordForm() {
   }
 
   return (
-    <form action={handleSubmit} className="flex flex-col gap-3">
+    <form ref={formRef} action={handleSubmit} className="flex flex-col gap-3">
       {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-      {saved && <p className="rounded-md bg-brand-green/10 px-3 py-2 text-sm text-brand-green">Password updated.</p>}
 
       <label className="flex flex-col gap-1 text-sm">
         Current password

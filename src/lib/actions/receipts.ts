@@ -25,7 +25,7 @@ export async function getReceiptForReprint(orderId: string): Promise<{ sale: Sal
   const { data: order, error } = await supabase
     .from('orders')
     .select(
-      'id, order_number, created_at, payment_method, payment_reference, contact_name, staff_id, order_items(quantity, unit_price_pesewas, books(title))'
+      'id, order_number, created_at, payment_method, payment_reference, payment_status, contact_name, contact_phone, user_id, staff_id, order_items(quantity, unit_price_pesewas, books(title))'
     )
     .eq('id', orderId)
     .single();
@@ -54,13 +54,36 @@ export async function getReceiptForReprint(orderId: string): Promise<{ sale: Sal
 
   const totalPesewas = items.reduce((sum, i) => sum + i.line_total_pesewas, 0);
 
+  // Credit sales: show that it's on credit and what the vendor owes (as of now).
+  const isCredit = order.payment_method === 'credit';
+  let balanceOwedPesewas: number | null = null;
+  if (order.user_id) {
+    const { data: vendor } = await supabase
+      .from('profiles')
+      .select('outstanding_balance_pesewas')
+      .eq('id', order.user_id)
+      .eq('role', 'vendor')
+      .single();
+    balanceOwedPesewas = vendor?.outstanding_balance_pesewas ?? null;
+  } else if (isCredit && order.contact_phone) {
+    // Walk-in on credit: everything this phone number still owes.
+    const { data: unpaid } = await supabase
+      .from('orders')
+      .select('total_pesewas')
+      .eq('order_type', 'counter_pos')
+      .is('user_id', null)
+      .eq('payment_method', 'credit')
+      .eq('payment_status', 'credit_approved')
+      .eq('contact_phone', order.contact_phone);
+    balanceOwedPesewas = (unpaid ?? []).reduce((sum, o) => sum + o.total_pesewas, 0);
+  }
+
   const { error: printLogError } = await supabase
     .from('receipt_prints')
     .insert({ order_id: orderId, staff_id: user.id });
   if (printLogError) console.error('receipt print log failed:', printLogError.message);
 
   return {
-    
     sale: {
       orderId: order.id,
       orderNumber: order.order_number,
@@ -70,6 +93,10 @@ export async function getReceiptForReprint(orderId: string): Promise<{ sale: Sal
       paymentMethod: order.payment_method,
       paymentReference: order.payment_reference,
       customerName: order.contact_name,
+      customerPhone: order.contact_phone,
+      isCredit,
+      balanceOwedPesewas,
+      balanceIsCurrent: true,
     },
     cashierName,
   };

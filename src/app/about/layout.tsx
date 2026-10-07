@@ -40,7 +40,7 @@ export default async function AboutLayout({ children }: { children: React.ReactN
     <div className="flex min-h-screen flex-col bg-surface-cream">
       <Navbar userFullName={fullName} userRole={role} />
       <main className="flex-1">{children}</main>
-      <Footer />
+      <Footer userRole={role} />
     </div>
   );
 }

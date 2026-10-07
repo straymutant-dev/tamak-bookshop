@@ -2,6 +2,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { normalizeGhanaPhone } from '@/lib/phone';
 
 interface CheckoutItem {
   bookId: string;
@@ -18,7 +19,7 @@ export async function submitVendorOrder(formData: FormData) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, vendor_status, credit_limit_pesewas, outstanding_balance_pesewas, business_name, full_name')
+    .select('role, vendor_status, credit_limit_pesewas, outstanding_balance_pesewas, business_name, full_name, phone')
     .eq('id', user.id)
     .single();
 
@@ -26,6 +27,9 @@ export async function submitVendorOrder(formData: FormData) {
   if (profile.vendor_status !== 'approved') {
     throw new Error('Your wholesale account is not yet approved for credit orders');
   }
+
+  const phone = normalizeGhanaPhone(String(formData.get('contactPhone') ?? ''));
+  if (!phone) throw new Error('Enter a valid phone number we can reach you on, e.g. 024 123 4567');
 
   const itemsRaw = String(formData.get('items') ?? '[]');
   let requestedItems: CheckoutItem[];
@@ -60,11 +64,28 @@ export async function submitVendorOrder(formData: FormData) {
   });
 
   const subtotalPesewas = orderItems.reduce((sum, i) => sum + i.line_total_pesewas, 0);
-  const availableCredit = profile.credit_limit_pesewas - profile.outstanding_balance_pesewas;
+
+  // Credit orders still waiting for approval are a promise to buy on credit, so
+  // they count against the limit too. Otherwise a vendor could queue several
+  // orders that together go past their limit.
+  const { data: pendingOrders, error: pendingError } = await supabase
+    .from('orders')
+    .select('total_pesewas')
+    .eq('user_id', user.id)
+    .eq('payment_status', 'credit_pending');
+
+  if (pendingError) throw new Error(pendingError.message);
+
+  const pendingPesewas = (pendingOrders ?? []).reduce((sum, o) => sum + o.total_pesewas, 0);
+  const availableCredit = Math.max(
+    0,
+    profile.credit_limit_pesewas - profile.outstanding_balance_pesewas - pendingPesewas
+  );
 
   if (subtotalPesewas > availableCredit) {
     throw new Error(
-      `This order (${(subtotalPesewas / 100).toFixed(2)} GHS) exceeds your available credit (${(availableCredit / 100).toFixed(2)} GHS)`
+      `This order (${(subtotalPesewas / 100).toFixed(2)} GHS) exceeds your available credit (${(availableCredit / 100).toFixed(2)} GHS)` +
+        (pendingPesewas > 0 ? `, after ${(pendingPesewas / 100).toFixed(2)} GHS of orders still awaiting approval` : '')
     );
   }
 
@@ -76,7 +97,8 @@ export async function submitVendorOrder(formData: FormData) {
       order_number: orderNumber,
       order_type: 'storefront_vendor',
       user_id: user.id,
-      contact_name: profile.business_name || profile.full_name,
+      contact_name: profile.full_name,
+      contact_phone: phone,
       payment_method: 'credit',
       payment_status: 'credit_pending',
       subtotal_pesewas: subtotalPesewas,
@@ -92,6 +114,8 @@ export async function submitVendorOrder(formData: FormData) {
     .insert(orderItems.map((item) => ({ ...item, order_id: order.id })));
 
   if (itemsError) throw new Error(itemsError.message);
+
+  if (!profile.phone) await supabase.from('profiles').update({ phone }).eq('id', user.id);
 
   // Stock is NOT deducted and the vendor's balance is NOT increased here —
   // this order sits as credit_pending until staff/admin approves it via
@@ -110,7 +134,7 @@ export async function submitVendorOrderImmediatePayment(formData: FormData) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, vendor_status, business_name, full_name')
+    .select('role, vendor_status, business_name, full_name, phone')
     .eq('id', user.id)
     .single();
 
@@ -120,10 +144,13 @@ export async function submitVendorOrderImmediatePayment(formData: FormData) {
   }
 
   const paymentMethod = String(formData.get('paymentMethod') ?? '');
-  if (!['cash', 'mobile_money', 'bank_transfer'].includes(paymentMethod)) {
+  if (!['cash', 'mobile_money', 'bank_transfer', 'cheque'].includes(paymentMethod)) {
     throw new Error('Choose a payment method');
   }
   const paymentReference = String(formData.get('paymentReference') ?? '').trim() || null;
+
+  const phone = normalizeGhanaPhone(String(formData.get('contactPhone') ?? ''));
+  if (!phone) throw new Error('Enter a valid phone number we can reach you on, e.g. 024 123 4567');
 
   const itemsRaw = String(formData.get('items') ?? '[]');
   let requestedItems: { bookId: string; quantity: number }[];
@@ -149,7 +176,6 @@ export async function submitVendorOrderImmediatePayment(formData: FormData) {
     const unitPrice = book.vendor_price_pesewas || book.customer_price_pesewas;
     return {
       book_id: book.id,
-      title: book.title,
       quantity: requested.quantity,
       unit_price_pesewas: unitPrice,
       line_total_pesewas: unitPrice * requested.quantity,
@@ -165,9 +191,14 @@ export async function submitVendorOrderImmediatePayment(formData: FormData) {
       order_number: orderNumber,
       order_type: 'storefront_vendor',
       user_id: user.id,
-      contact_name: profile.business_name || profile.full_name,
+      contact_name: profile.full_name,
+      contact_phone: phone,
       payment_method: paymentMethod,
       payment_reference: paymentReference,
+      // Not "paid" until staff confirm the money arrived (see confirm_vendor_order_payment).
+      payment_status: 'payment_pending',
+      cheque_number: paymentMethod === 'cheque' ? paymentReference : null,
+      cheque_cleared: paymentMethod === 'cheque' ? false : null,
       subtotal_pesewas: subtotalPesewas,
       total_pesewas: subtotalPesewas,
     })
@@ -178,16 +209,12 @@ export async function submitVendorOrderImmediatePayment(formData: FormData) {
 
   const { error: itemsError } = await supabase
     .from('order_items')
-    .insert(orderItems.map(({ title, ...item }) => ({ ...item, order_id: order.id })));
+    .insert(orderItems.map((item) => ({ ...item, order_id: order.id })));
   if (itemsError) throw new Error(itemsError.message);
 
-  for (const item of orderItems) {
-    const { error: stockError } = await supabase.rpc('decrement_book_stock', {
-      book_id: item.book_id,
-      qty: item.quantity,
-    });
-    if (stockError) throw new Error(`Stock update failed for "${item.title}": ${stockError.message}`);
-  }
+  if (!profile.phone) await supabase.from('profiles').update({ phone }).eq('id', user.id);
+
+  // Stock is NOT deducted here. It comes out when staff confirm the payment.
 
   return { orderNumber: order.order_number };
 }

@@ -1,6 +1,7 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { sessionCookieOptions } from './cookieOptions';
 
 type Role = 'client' | 'vendor' | 'staff' | 'admin';
 
@@ -49,13 +50,7 @@ export async function updateSession(request: NextRequest) {
           );
         },
       },
-      cookieOptions: {
-        domain: process.env.NODE_ENV === 'production' ? '.tamakbookshop.com' : '.localhost',
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24 * 7,
-      },
+      cookieOptions: sessionCookieOptions(),
     }
   );
 

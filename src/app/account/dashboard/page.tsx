@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { formatGHS } from '@/lib/currency';
 import StatRow from '@/components/admin/StatRow';
+import OrderNumberButton from '@/components/orders/OrderNumberButton';
+import NotificationsPanel from '@/components/notifications/NotificationsPanel';
 
 export default async function ClientDashboardPage() {
   const supabase = await createClient();
@@ -27,6 +29,8 @@ export default async function ClientDashboardPage() {
     <div className="mx-auto max-w-3xl px-6 py-10">
       <h1 className="mb-1 font-serif text-2xl text-ink">Welcome back, {profile?.full_name}</h1>
       <p className="mb-6 text-sm text-ink-muted">Here&rsquo;s your account at a glance.</p>
+
+      <NotificationsPanel />
 
       <StatRow
         stats={[
@@ -62,7 +66,7 @@ export default async function ClientDashboardPage() {
           {recentOrders.map((order) => (
             <div key={order.id} className="flex items-center justify-between text-sm">
               <div>
-                <div className="font-medium text-ink">{order.order_number}</div>
+                <OrderNumberButton orderId={order.id} orderNumber={order.order_number} />
                 <div className="text-xs capitalize text-ink-muted">{order.payment_status.replace('_', ' ')}</div>
               </div>
               <span className="text-ink">{formatGHS(order.total_pesewas)}</span>

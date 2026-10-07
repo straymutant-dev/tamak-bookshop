@@ -6,39 +6,57 @@ import { useCart } from '@/lib/cart/CartContext';
 import { formatGHS } from '@/lib/currency';
 import { submitVendorOrder, submitVendorOrderImmediatePayment } from './actions';
 
+type Method = 'credit' | 'cash' | 'mobile_money' | 'bank_transfer' | 'cheque';
+
+const METHOD_LABEL: Record<Method, string> = {
+  credit: 'Credit account',
+  cash: 'Cash on pickup',
+  mobile_money: 'Mobile Money',
+  bank_transfer: 'Bank transfer',
+  cheque: 'Cheque',
+};
+
 export default function VendorCartClient({
   availableCreditPesewas,
   vendorApproved,
+  vendorName,
+  defaultPhone,
 }: {
   availableCreditPesewas: number;
   vendorApproved: boolean;
+  vendorName: string;
+  defaultPhone: string;
 }) {
   const { items, setQuantity, removeItem, totalPesewas, clear } = useCart();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [confirmation, setConfirmation] = useState<string | null>(null);
-  const [payNow, setPayNow] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [confirmation, setConfirmation] = useState<{ orderNumber: string; credit: boolean } | null>(null);
+  const [method, setMethod] = useState<Method | null>(null);
   const [paymentReference, setPaymentReference] = useState('');
+  const [phone, setPhone] = useState(defaultPhone);
 
-  const overLimit = totalPesewas > availableCreditPesewas;
+  const creditOk = availableCreditPesewas > 0 && totalPesewas <= availableCreditPesewas;
+  const chosen: Method = method ?? (creditOk ? 'credit' : 'cash');
+  const useCredit = chosen === 'credit';
+  const overLimit = useCredit && !creditOk;
 
   function handleSubmit() {
     setError(null);
     const formData = new FormData();
     formData.set('items', JSON.stringify(items.map((i) => ({ bookId: i.bookId, quantity: i.quantity }))));
+    formData.set('contactPhone', phone);
 
     startTransition(async () => {
       try {
         let result;
-        if (payNow) {
-          formData.set('paymentMethod', paymentMethod);
+        if (useCredit) {
+          result = await submitVendorOrder(formData);
+        } else {
+          formData.set('paymentMethod', chosen);
           formData.set('paymentReference', paymentReference);
           result = await submitVendorOrderImmediatePayment(formData);
-        } else {
-          result = await submitVendorOrder(formData);
         }
-        setConfirmation(result.orderNumber);
+        setConfirmation({ orderNumber: result.orderNumber, credit: useCredit });
         clear();
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong');
@@ -49,15 +67,25 @@ export default function VendorCartClient({
   if (confirmation) {
     return (
       <div className="mx-auto max-w-md px-6 py-20 text-center">
-        <h1 className="mb-2 font-serif text-2xl text-ink">Credit order submitted</h1>
-        <p className="text-ink-muted">
-          Order <span className="font-medium text-ink">{confirmation}</span> is pending staff
-          approval. You&rsquo;ll see it update on your{' '}
-          <a href="/vendor/dashboard" className="text-brand-green hover:underline">
-            dashboard
-          </a>{' '}
-          once approved.
-        </p>
+        <h1 className="mb-2 font-serif text-2xl text-ink">
+          {confirmation.credit ? 'Credit order submitted' : 'Order placed'}
+        </h1>
+        {confirmation.credit ? (
+          <p className="text-ink-muted">
+            Order <span className="font-medium text-ink">{confirmation.orderNumber}</span> is pending staff approval,
+            and the amount is reserved from your available credit. You&rsquo;ll see it update on your{' '}
+            <a href="/vendor/dashboard" className="text-brand-green hover:underline">
+              dashboard
+            </a>{' '}
+            once approved.
+          </p>
+        ) : (
+          <p className="text-ink-muted">
+            Order <span className="font-medium text-ink">{confirmation.orderNumber}</span> has been placed. Make your
+            payment as chosen &mdash; staff will confirm it, and the order is marked paid only then. It is not on your
+            credit account.
+          </p>
+        )}
       </div>
     );
   }
@@ -108,13 +136,28 @@ export default function VendorCartClient({
 
       <div>
         <div className="rounded-md border border-border-beige bg-surface-card p-5">
-          <div className="mb-2 flex justify-between text-sm">
+          <p className="mb-3 rounded-md bg-surface-cream px-3 py-2 text-sm text-ink">
+            Ordering as <span className="font-medium">{vendorName}</span>
+          </p>
+
+          {vendorApproved && (
+            <label className="mb-4 flex flex-col gap-1 text-sm">
+              Phone we can reach you on
+              <input
+                type="tel"
+                required
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="024 123 4567"
+                className="rounded-md border border-brand-sage px-3 py-2 text-sm"
+              />
+              <span className="text-xs text-ink-muted">Used for delivery and payment follow-up.</span>
+            </label>
+          )}
+
+          <div className="mb-4 flex justify-between text-sm">
             <span className="text-ink-muted">Order total</span>
             <span className="font-medium text-ink">{formatGHS(totalPesewas)}</span>
-          </div>
-          <div className="mb-4 flex justify-between text-xs text-ink-muted">
-            <span>Available credit</span>
-            <span>{formatGHS(availableCreditPesewas)}</span>
           </div>
 
           {!vendorApproved && (
@@ -124,52 +167,44 @@ export default function VendorCartClient({
           )}
 
           {vendorApproved && (
-            <div className="mb-4 flex rounded-md border border-brand-sage p-1 text-xs">
-              <button
-                type="button"
-                onClick={() => setPayNow(false)}
-                className={`flex-1 rounded px-2 py-1.5 font-medium ${!payNow ? 'bg-brand-green text-white' : 'text-ink'}`}
-              >
-                Pay on credit
-              </button>
-              <button
-                type="button"
-                onClick={() => setPayNow(true)}
-                className={`flex-1 rounded px-2 py-1.5 font-medium ${payNow ? 'bg-brand-green text-white' : 'text-ink'}`}
-              >
-                Pay now
-              </button>
-            </div>
-          )}
+            <div className="mb-4 flex flex-col gap-3 text-sm">
+              <span className="text-ink">Payment method</span>
+              {(Object.keys(METHOD_LABEL) as Method[]).map((m) => {
+                const disabled = m === 'credit' && !creditOk;
+                return (
+                  <label
+                    key={m}
+                    className={`flex items-start gap-2 ${disabled ? 'cursor-not-allowed text-ink-muted' : 'text-ink'}`}
+                  >
+                    <input
+                      type="radio"
+                      name="paymentMethodChoice"
+                      className="mt-1"
+                      checked={chosen === m}
+                      disabled={disabled}
+                      onChange={() => setMethod(m)}
+                    />
+                    <span>
+                      {METHOD_LABEL[m]}
+                      {m === 'credit' && (
+                        <span className="block text-xs text-ink-muted">
+                          Available: {formatGHS(availableCreditPesewas)}
+                          {disabled && availableCreditPesewas > 0 && (
+                            <> · this order is {formatGHS(totalPesewas - availableCreditPesewas)} over</>
+                          )}
+                          {disabled && availableCreditPesewas === 0 && <> · no credit available</>}
+                        </span>
+                      )}
+                    </span>
+                  </label>
+                );
+              })}
 
-          {vendorApproved && !payNow && overLimit && (
-            <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
-              This order exceeds your available credit. Reduce quantities, or switch to &ldquo;Pay
-              now&rdquo; above.
-            </p>
-          )}
-
-          {vendorApproved && payNow && (
-            <div className="mb-4 flex flex-col gap-2 text-xs">
-              {[
-                { value: 'cash', label: 'Cash on pickup' },
-                { value: 'mobile_money', label: 'Mobile Money' },
-                { value: 'bank_transfer', label: 'Bank transfer' },
-              ].map((m) => (
-                <label key={m.value} className="flex items-center gap-2 text-ink">
-                  <input
-                    type="radio"
-                    checked={paymentMethod === m.value}
-                    onChange={() => setPaymentMethod(m.value)}
-                  />
-                  {m.label}
-                </label>
-              ))}
-              {(paymentMethod === 'mobile_money' || paymentMethod === 'bank_transfer') && (
+              {(chosen === 'mobile_money' || chosen === 'bank_transfer' || chosen === 'cheque') && (
                 <input
                   value={paymentReference}
                   onChange={(e) => setPaymentReference(e.target.value)}
-                  placeholder="Payment reference"
+                  placeholder={chosen === 'cheque' ? 'Cheque number' : 'Payment reference (if you have it)'}
                   className="rounded-md border border-brand-sage px-2 py-1.5 text-xs"
                 />
               )}
@@ -180,16 +215,16 @@ export default function VendorCartClient({
 
           <button
             onClick={handleSubmit}
-            disabled={isPending || !vendorApproved || (!payNow && overLimit)}
+            disabled={isPending || !vendorApproved || overLimit || phone.trim().length < 9}
             className="w-full rounded-md bg-brand-green px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
-            {isPending ? 'Submitting…' : payNow ? 'Place order' : 'Submit for approval'}
+            {isPending ? 'Submitting…' : useCredit ? 'Submit for approval' : 'Place order'}
           </button>
 
           <p className="mt-3 text-xs text-ink-muted">
-            {payNow
-              ? 'Stock is reserved immediately once this order is placed.'
-              : 'This places the order on your wholesale credit account. Staff will review and approve it before stock is reserved.'}
+            {useCredit
+              ? 'The amount is reserved from your available credit now. It only becomes owed once staff approve the order.'
+              : 'This order is marked paid only after staff confirm your payment, with its reference.'}
           </p>
         </div>
       </div>

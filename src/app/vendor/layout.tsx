@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import Navbar from '@/components/store/Navbar';
 import Footer from '@/components/store/Footer';
+import LiveRefresh from '@/components/ui/LiveRefresh';
+import NotificationToasts from '@/components/notifications/NotificationToasts';
 
 const REDIRECT_BY_ROLE: Record<string, string> = {
   admin: '/admin/inventory',
@@ -29,6 +31,8 @@ export default async function VendorLayout({ children }: { children: React.React
   return (
     <div className="flex min-h-screen flex-col bg-surface-cream">
       <Navbar userFullName={profile.full_name} userRole="vendor" />
+      <LiveRefresh tables={['orders', 'profiles', 'repayment_requests', 'credit_repayments', 'notifications']} />
+      <NotificationToasts />
       <main className="flex-1">{children}</main>
       <Footer userRole="vendor" />
     </div>

@@ -5,13 +5,12 @@ export interface CachedBook {
   id: string;
   title: string;
   author: string | null;
-  isbn: string | null;
   category: string | null;
   class_level: string | null;
   customer_price_pesewas: number;
   vendor_price_pesewas: number;
   stock_quantity: number;
-  cover_url: string | null;
+  cover_image_url: string | null;
   updated_at: string;
 }
 
@@ -24,9 +23,9 @@ export interface OutboxSale {
     unit_price_pesewas: number;
   }[];
   total_pesewas: number;
-  pay_method: 'cash' | 'momo' | 'bank_transfer' | 'credit';
+  pay_method: 'cash' | 'mobile_money' | 'bank_transfer' | 'credit';
   pay_status: 'paid' | 'pending';
-  momo_reference: string | null;
+  payment_reference: string | null;
   vendor_id: string | null;
   cashier_id: string;
   created_at: string;
@@ -41,7 +40,7 @@ export class TamakOfflineDB extends Dexie {
   constructor() {
     super('tamak-bookshop-pos');
     this.version(1).stores({
-      books: 'id, title, isbn, category, class_level, updated_at',
+      books: 'id, title, category, class_level, updated_at',
       outbox: '++id, client_uuid, synced, created_at',
     });
   }

@@ -3,6 +3,9 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { formatGHS } from '@/lib/currency';
 import StatRow, { type Stat } from '@/components/admin/StatRow';
+import OrderNumberButton from '@/components/orders/OrderNumberButton';
+import NotificationsPanel from '@/components/notifications/NotificationsPanel';
+import AttentionPanel from '@/components/notifications/AttentionPanel';
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -69,6 +72,10 @@ export default async function AdminDashboardPage() {
       <h1 className="mb-1 font-serif text-2xl text-ink">Welcome back, {profile?.full_name}</h1>
       <p className="mb-6 text-sm text-ink-muted">Here&rsquo;s what&rsquo;s happening today.</p>
 
+      <AttentionPanel />
+
+      <NotificationsPanel />
+
       <StatRow stats={stats} />
 
       <div className="mb-8 flex flex-wrap gap-3">
@@ -99,7 +106,7 @@ export default async function AdminDashboardPage() {
           {(recentOrders ?? []).map((order) => (
             <div key={order.id} className="flex items-center justify-between text-sm">
               <div>
-                <div className="font-medium text-ink">{order.order_number}</div>
+                <OrderNumberButton orderId={order.id} orderNumber={order.order_number} />
                 <div className="text-xs text-ink-muted">
                   {order.staff_id
                     ? `Sold by ${namesById[order.staff_id] ?? 'Staff'}`

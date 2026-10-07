@@ -2,7 +2,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { ghsToPesewas } from '@/lib/currency';
 import type { VendorStatus } from '@/lib/types';
 
@@ -33,12 +33,19 @@ export async function setVendorCreditLimit(formData: FormData) {
 
   if (!vendorId || newLimitPesewas < 0) throw new Error('Invalid vendor or credit limit');
 
-  const { error } = await supabase
+  // RLS only lets a user update their OWN profile, so a user-session update of
+  // someone else's row matches 0 rows and fails silently. The admin check above
+  // already passed, so write with the service-role client (vendors only).
+  const service = createServiceRoleClient();
+  const { data: updated, error } = await service
     .from('profiles')
     .update({ credit_limit_pesewas: newLimitPesewas })
-    .eq('id', vendorId);
+    .eq('id', vendorId)
+    .eq('role', 'vendor')
+    .select('id');
 
   if (error) throw new Error(error.message);
+  if (!updated?.length) throw new Error('Vendor not found — nothing was updated');
 
   const { error: auditError } = await supabase.from('audit_logs').insert({
     staff_id: adminId,
@@ -56,12 +63,16 @@ export async function setVendorStatus(vendorId: string, status: VendorStatus) {
   const supabase = await createClient();
   const adminId = await assertAdmin(supabase);
 
-  const { error } = await supabase
+  const service = createServiceRoleClient();
+  const { data: updated, error } = await service
     .from('profiles')
     .update({ vendor_status: status })
-    .eq('id', vendorId);
+    .eq('id', vendorId)
+    .eq('role', 'vendor')
+    .select('id');
 
   if (error) throw new Error(error.message);
+  if (!updated?.length) throw new Error('Vendor not found — nothing was updated');
 
   const { error: auditError } = await supabase.from('audit_logs').insert({
     staff_id: adminId,
