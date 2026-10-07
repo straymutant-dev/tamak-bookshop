@@ -48,7 +48,7 @@ export async function adminLogin(formData: FormData) {
     );
   }
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user!.id).single();
+  const { data: profile } = await supabase.from('profiles').select('role, full_name').eq('id', data.user!.id).single();
 
   if (profile?.role !== 'admin' && profile?.role !== 'staff') {
     await supabase.auth.signOut();
@@ -56,5 +56,5 @@ export async function adminLogin(formData: FormData) {
   }
 
   await service.from('login_attempts').delete().eq('email', email);
-  redirect(`/dashboard?toast=${encodeURIComponent('WelcomeMessage')}`);
+  redirect(`/dashboard?toast=${encodeURIComponent(`Welcome back, ${profile?.full_name ?? 'there'}!`)}`);
 }

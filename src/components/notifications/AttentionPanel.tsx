@@ -22,7 +22,7 @@ export default async function AttentionPanel() {
     supabase
       .from('orders')
       .select('id', { count: 'exact', head: true })
-      .eq('order_type', 'storefront_vendor')
+      .in('order_type', ['storefront_vendor', 'storefront_client'])
       .in('payment_status', ['credit_pending', 'payment_pending']),
     supabase.from('repayment_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
     isAdmin
@@ -57,7 +57,7 @@ export default async function AttentionPanel() {
   ]);
 
   const rows = [
-    { label: 'Vendor orders to approve or confirm', count: vendorOrders.count ?? 0, href: '/admin/orders?tab=vendor' },
+    { label: 'Orders to approve or confirm payment for', count: vendorOrders.count ?? 0, href: '/admin/orders?tab=vendor' },
     { label: 'Vendor payments to confirm', count: repayments.count ?? 0, href: '/admin/repayments' },
     { label: 'Vendors waiting for approval', count: vendors.count ?? 0, href: '/admin/vendors' },
     { label: 'Walk-in cheques waiting to clear', count: chequesWaiting.count ?? 0, href: '/admin/orders?tab=walkin' },

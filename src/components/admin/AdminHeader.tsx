@@ -23,6 +23,7 @@ const ALL_LINKS = [
   { label: 'Staff', href: '/admin/staff', adminOnly: true },
   { label: 'Team', href: '/admin/team', adminOnly: true },
   { label: 'Activity', href: '/admin/activity', adminOnly: true },
+{ label: 'Payment details', href: '/admin/settings/payments', adminOnly: true },
 ];
 
 export default function AdminHeader({ fullName, role }: { fullName: string | null; role?: string | null }) {

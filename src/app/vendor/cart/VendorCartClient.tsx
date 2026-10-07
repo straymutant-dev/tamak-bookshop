@@ -5,6 +5,8 @@ import { useState, useTransition } from 'react';
 import { useCart } from '@/lib/cart/CartContext';
 import { formatGHS } from '@/lib/currency';
 import { submitVendorOrder, submitVendorOrderImmediatePayment } from './actions';
+import PaymentInstructions from '@/components/payments/PaymentInstructions';
+import type { PaymentAccount } from '@/lib/paymentTypes';
 
 type Method = 'credit' | 'cash' | 'mobile_money' | 'bank_transfer' | 'cheque';
 
@@ -21,16 +23,24 @@ export default function VendorCartClient({
   vendorApproved,
   vendorName,
   defaultPhone,
+  paymentAccounts,
 }: {
   availableCreditPesewas: number;
   vendorApproved: boolean;
   vendorName: string;
   defaultPhone: string;
+  paymentAccounts: PaymentAccount[];
 }) {
   const { items, setQuantity, removeItem, totalPesewas, clear } = useCart();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [confirmation, setConfirmation] = useState<{ orderNumber: string; credit: boolean } | null>(null);
+  const [confirmation, setConfirmation] = useState<{
+    orderId: string;
+    orderNumber: string;
+    credit: boolean;
+    method: string;
+    amountPesewas: number;
+  } | null>(null);
   const [method, setMethod] = useState<Method | null>(null);
   const [paymentReference, setPaymentReference] = useState('');
   const [phone, setPhone] = useState(defaultPhone);
@@ -56,7 +66,13 @@ export default function VendorCartClient({
           formData.set('paymentReference', paymentReference);
           result = await submitVendorOrderImmediatePayment(formData);
         }
-        setConfirmation({ orderNumber: result.orderNumber, credit: useCredit });
+        setConfirmation({
+          orderId: result.orderId,
+          orderNumber: result.orderNumber,
+          credit: useCredit,
+          method: chosen,
+          amountPesewas: result.totalPesewas,
+        });
         clear();
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong');
@@ -80,11 +96,20 @@ export default function VendorCartClient({
             once approved.
           </p>
         ) : (
-          <p className="text-ink-muted">
-            Order <span className="font-medium text-ink">{confirmation.orderNumber}</span> has been placed. Make your
-            payment as chosen &mdash; staff will confirm it, and the order is marked paid only then. It is not on your
-            credit account.
-          </p>
+          <div className="mt-4">
+            <p className="mb-4 text-ink-muted">
+              Order <span className="font-medium text-ink">{confirmation.orderNumber}</span> has been placed. It is
+              marked paid only after staff confirm your payment. It is not on your credit account.
+            </p>
+            <PaymentInstructions
+              orderId={confirmation.orderId}
+              orderNumber={confirmation.orderNumber}
+              amountPesewas={confirmation.amountPesewas}
+              method={confirmation.method}
+              accounts={paymentAccounts}
+              canReport
+            />
+          </div>
         )}
       </div>
     );
@@ -200,11 +225,17 @@ export default function VendorCartClient({
                 );
               })}
 
-              {(chosen === 'mobile_money' || chosen === 'bank_transfer' || chosen === 'cheque') && (
+              {(chosen === 'mobile_money' || chosen === 'bank_transfer') && (
+                <p className="rounded-md bg-surface-cream px-3 py-2 text-xs text-ink-muted">
+                  After you place the order you&rsquo;ll see where to pay. Use your order number as the payment
+                  reference, then enter the transaction ID.
+                </p>
+              )}
+              {chosen === 'cheque' && (
                 <input
                   value={paymentReference}
                   onChange={(e) => setPaymentReference(e.target.value)}
-                  placeholder={chosen === 'cheque' ? 'Cheque number' : 'Payment reference (if you have it)'}
+                  placeholder="Cheque number (if you have it)"
                   className="rounded-md border border-brand-sage px-2 py-1.5 text-xs"
                 />
               )}

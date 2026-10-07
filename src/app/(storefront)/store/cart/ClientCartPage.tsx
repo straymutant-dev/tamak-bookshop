@@ -5,6 +5,8 @@ import { useState, useTransition } from 'react';
 import { useCart } from '@/lib/cart/CartContext';
 import { formatGHS } from '@/lib/currency';
 import { submitOrder } from './actions';
+import PaymentInstructions from '@/components/payments/PaymentInstructions';
+import type { PaymentAccount } from '@/lib/paymentTypes';
 
 const PAY_METHODS = [
   { value: 'cash', label: 'Cash on pickup' },
@@ -12,18 +14,30 @@ const PAY_METHODS = [
   { value: 'bank_transfer', label: 'Bank transfer' },
 ];
 
+interface PlacedOrder {
+  orderId: string;
+  orderNumber: string;
+  totalPesewas: number;
+  method: string;
+  phone: string;
+}
+
 export default function ClientCartPage({
   signedInName,
   signedInPhone,
+  signedIn,
+  paymentAccounts,
 }: {
   signedInName: string | null;
   signedInPhone: string | null;
+  signedIn: boolean;
+  paymentAccounts: PaymentAccount[];
 }) {
   const { items, setQuantity, removeItem, totalPesewas, clear } = useCart();
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [confirmation, setConfirmation] = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<PlacedOrder | null>(null);
 
   function handleSubmit(formData: FormData) {
     setError(null);
@@ -36,7 +50,13 @@ export default function ClientCartPage({
     startTransition(async () => {
       try {
         const result = await submitOrder(formData);
-        setConfirmation(result.orderNumber);
+        setConfirmation({
+          orderId: result.orderId,
+          orderNumber: result.orderNumber,
+          totalPesewas: result.totalPesewas,
+          method: paymentMethod,
+          phone: String(formData.get('contactPhone') ?? '').trim(),
+        });
         clear();
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong');
@@ -46,15 +66,29 @@ export default function ClientCartPage({
 
   if (confirmation) {
     return (
-      <div className="mx-auto max-w-md px-6 py-20 text-center">
-        <h1 className="mb-2 font-serif text-2xl text-ink">Order placed</h1>
-        <p className="text-ink-muted">
-          Your order number is <span className="font-medium text-ink">{confirmation}</span>. Use
-          it with your phone number on the{' '}
-          <a href="/store/track" className="text-brand-green hover:underline">
-            track order
+      <div className="mx-auto max-w-md px-6 py-12">
+        <h1 className="mb-2 text-center font-serif text-2xl text-ink">Order placed</h1>
+        <p className="mb-6 text-center text-sm text-ink-muted">
+          Your order number is <span className="font-medium text-ink">{confirmation.orderNumber}</span>. It is reserved
+          for you once your payment is confirmed.
+        </p>
+
+        <PaymentInstructions
+          orderId={signedIn ? confirmation.orderId : undefined}
+          orderNumber={confirmation.orderNumber}
+          amountPesewas={confirmation.totalPesewas}
+          method={confirmation.method}
+          accounts={paymentAccounts}
+          canReport
+          guestPhone={signedIn ? undefined : confirmation.phone}
+        />
+
+        <p className="mt-6 text-center text-xs text-ink-muted">
+          You can check progress any time on the{' '}
+          <a href={signedIn ? '/account/orders' : '/store/track'} className="text-brand-green hover:underline">
+            {signedIn ? 'My orders' : 'track order'}
           </a>{' '}
-          page to check status.
+          page{signedIn ? '' : ' with your order number and phone'}.
         </p>
       </div>
     );
@@ -158,10 +192,10 @@ export default function ClientCartPage({
             </div>
 
             {(paymentMethod === 'mobile_money' || paymentMethod === 'bank_transfer') && (
-              <label className="flex flex-col gap-1 text-sm">
-                Payment reference (if you&rsquo;ve already paid)
-                <input name="paymentReference" className="rounded-md border border-brand-sage px-3 py-2" />
-              </label>
+              <p className="rounded-md bg-surface-cream px-3 py-2 text-xs text-ink-muted">
+                After you place the order you&rsquo;ll see exactly where to pay. Use your order number as the payment
+                reference, then enter the transaction ID.
+              </p>
             )}
 
             <button

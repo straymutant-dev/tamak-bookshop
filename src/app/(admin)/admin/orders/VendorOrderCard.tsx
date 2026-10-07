@@ -14,6 +14,9 @@ export interface VendorOrderCardProps {
     totalPesewas: number;
     paymentStatus: string; // 'credit_pending' | 'payment_pending'
     fulfillmentType: string;
+    paymentReportedAt: string | null;
+    /** vendor = wholesale account order; customer = ordinary online order */
+    kind: 'vendor' | 'customer';
     paymentMethod: string;
     paymentReference: string | null;
     contactPhone: string | null;
@@ -96,6 +99,7 @@ export default function VendorOrderCard({ order, vendor }: VendorOrderCardProps)
         </div>
         <div className="text-right">
           <p className="font-medium text-ink">{formatGHS(order.totalPesewas)}</p>
+          {order.kind === 'customer' && <p className="mt-1 text-xs text-ink-muted">Online customer</p>}
           <span
             className={`mt-1 inline-block rounded-full px-2 py-1 text-xs font-medium ${
               isCredit ? 'bg-accent-gold/20 text-accent-gold' : 'bg-accent-terracotta/10 text-accent-terracotta'
@@ -129,6 +133,18 @@ export default function VendorOrderCard({ order, vendor }: VendorOrderCardProps)
         <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
           Approving would put this vendor over their credit limit, so it will be refused. Raise their limit on the
           vendor page first, or reject the order.
+        </p>
+      )}
+
+      {!isCredit && (
+        <p
+          className={`mb-3 rounded-md px-3 py-2 text-xs ${
+            order.paymentReportedAt ? 'bg-brand-green/10 text-brand-green' : 'bg-surface-cream text-ink-muted'
+          }`}
+        >
+          {order.paymentReportedAt
+            ? `They say they paid ${new Date(order.paymentReportedAt).toLocaleString()}. Check the reference below against your account before confirming.`
+            : 'They have not reported a payment yet. Confirm only once the money is in your account.'}
         </p>
       )}
 

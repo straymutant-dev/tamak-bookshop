@@ -307,6 +307,42 @@ export type Database = {
           },
         ];
       };
+      payment_accounts: {
+        Row: {
+          account_name: string;
+          account_number: string;
+          created_at: string;
+          details: string | null;
+          id: string;
+          is_active: boolean;
+          kind: string;
+          label: string;
+          sort_order: number;
+        };
+        Insert: {
+          account_name: string;
+          account_number: string;
+          created_at?: string;
+          details?: string | null;
+          id?: string;
+          is_active?: boolean;
+          kind: string;
+          label: string;
+          sort_order?: number;
+        };
+        Update: {
+          account_name?: string;
+          account_number?: string;
+          created_at?: string;
+          details?: string | null;
+          id?: string;
+          is_active?: boolean;
+          kind?: string;
+          label?: string;
+          sort_order?: number;
+        };
+        Relationships: [];
+      };
       login_attempts: {
         Row: {
           email: string;
@@ -446,6 +482,7 @@ export type Database = {
           order_type: Database["public"]["Enums"]["order_kind"];
           payment_method: Database["public"]["Enums"]["pay_method"];
           payment_reference: string | null;
+          payment_reported_at: string | null;
           payment_status: Database["public"]["Enums"]["pay_status"];
           staff_id: string | null;
           subtotal_pesewas: number;
@@ -469,6 +506,7 @@ export type Database = {
           order_type: Database["public"]["Enums"]["order_kind"];
           payment_method: Database["public"]["Enums"]["pay_method"];
           payment_reference?: string | null;
+          payment_reported_at?: string | null;
           payment_status?: Database["public"]["Enums"]["pay_status"];
           staff_id?: string | null;
           subtotal_pesewas: number;
@@ -492,6 +530,7 @@ export type Database = {
           order_type?: Database["public"]["Enums"]["order_kind"];
           payment_method?: Database["public"]["Enums"]["pay_method"];
           payment_reference?: string | null;
+          payment_reported_at?: string | null;
           payment_status?: Database["public"]["Enums"]["pay_status"];
           staff_id?: string | null;
           subtotal_pesewas?: number;
@@ -641,6 +680,7 @@ export type Database = {
       mark_walkin_customer_notified: { Args: { p_phone: string; p_cheque_number: string }; Returns: undefined };
       receive_walkin_cheque: { Args: { p_order_ids: string[]; p_cheque_number: string }; Returns: number };
       mark_notifications_read: { Args: { p_ids?: string[] }; Returns: undefined };
+      report_order_payment: { Args: { p_order_id: string; p_reference: string }; Returns: undefined };
       pos_vendor_sale: {
         Args: {
           p_vendor_id: string | null;

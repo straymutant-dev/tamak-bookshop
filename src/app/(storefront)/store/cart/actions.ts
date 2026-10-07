@@ -33,7 +33,8 @@ export async function submitOrder(formData: FormData) {
     if (!contactPhone && profile?.phone) contactPhone = profile.phone;
   }
   const paymentMethod = String(formData.get('paymentMethod') ?? '');
-  const paymentReference = String(formData.get('paymentReference') ?? '').trim() || null;
+  // The reference is given AFTER paying (it can't be known yet), so none is taken here.
+  const paymentReference: string | null = null;
   const itemsRaw = String(formData.get('items') ?? '[]');
 
   if (!contactName || !contactPhone) throw new Error('Name and phone are required');
@@ -91,6 +92,8 @@ export async function submitOrder(formData: FormData) {
       contact_phone: contactPhone,
       payment_method: paymentMethod,
       payment_reference: paymentReference,
+      // Not "paid" until staff confirm the money arrived (see confirm_vendor_order_payment).
+      payment_status: 'payment_pending',
       subtotal_pesewas: subtotalPesewas,
       total_pesewas: totalPesewas,
     })
@@ -105,17 +108,7 @@ export async function submitOrder(formData: FormData) {
 
   if (itemsError) throw new Error(itemsError.message);
 
-  // Deduct stock atomically via the RPC — see decrement_book_stock in
-  // 08_guest_contact_and_stock_rpc.sql for why this can't be a plain update.
-  for (const item of orderItems) {
-    const { error: stockError } = await supabase.rpc('decrement_book_stock', {
-      book_id: item.book_id,
-      qty: item.quantity,
-    });
-    if (stockError) {
-      throw new Error(`Stock update failed for one item: ${stockError.message}`);
-    }
-  }
+  // Stock is NOT deducted here: it comes out when staff confirm the payment.
 
-  return { orderNumber: order.order_number };
+  return { orderId: order.id, orderNumber: order.order_number, totalPesewas };
 }

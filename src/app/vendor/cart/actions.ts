@@ -121,7 +121,7 @@ export async function submitVendorOrder(formData: FormData) {
   // this order sits as credit_pending until staff/admin approves it via
   // /admin/approvals.
 
-  return { orderNumber: order.order_number };
+  return { orderId: order.id, orderNumber: order.order_number, totalPesewas: subtotalPesewas };
 }
 
 export async function submitVendorOrderImmediatePayment(formData: FormData) {
@@ -216,5 +216,5 @@ export async function submitVendorOrderImmediatePayment(formData: FormData) {
 
   // Stock is NOT deducted here. It comes out when staff confirm the payment.
 
-  return { orderNumber: order.order_number };
+  return { orderId: order.id, orderNumber: order.order_number, totalPesewas: subtotalPesewas };
 }

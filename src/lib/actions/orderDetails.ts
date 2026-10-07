@@ -3,6 +3,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import type { OrderDetails } from '@/lib/orderDetailsTypes';
+import { fetchPaymentAccounts } from '@/lib/paymentAccounts';
 
 /**
  * The exact books on one order. Uses the signed-in user's own session, so the
@@ -19,12 +20,16 @@ export async function getOrderDetails(orderId: string): Promise<OrderDetails> {
   const { data: order, error } = await supabase
     .from('orders')
     .select(
-      'id, order_number, created_at, payment_method, payment_status, payment_reference, cheque_number, fulfillment_type, order_status, subtotal_pesewas, discount_pesewas, total_pesewas, contact_name, contact_phone, order_items(id, quantity, unit_price_pesewas, line_total_pesewas, books(title, author))'
+      'id, order_number, user_id, payment_reported_at, created_at, payment_method, payment_status, payment_reference, cheque_number, fulfillment_type, order_status, subtotal_pesewas, discount_pesewas, total_pesewas, contact_name, contact_phone, order_items(id, quantity, unit_price_pesewas, line_total_pesewas, books(title, author))'
     )
     .eq('id', orderId)
     .single();
 
   if (error || !order) throw new Error('Order not found');
+
+  const isOwner = order.user_id === user.id;
+  const awaitingPayment = order.payment_status === 'payment_pending';
+  const paymentAccounts = isOwner && awaitingPayment ? await fetchPaymentAccounts(supabase) : [];
 
   return {
     id: order.id,
@@ -41,6 +46,9 @@ export async function getOrderDetails(orderId: string): Promise<OrderDetails> {
     totalPesewas: order.total_pesewas,
     contactName: order.contact_name,
     contactPhone: order.contact_phone,
+    isOwner,
+    paymentReportedAt: order.payment_reported_at,
+    paymentAccounts,
     items: (order.order_items ?? []).map((item) => {
       const book = Array.isArray(item.books) ? item.books[0] : item.books;
       return {

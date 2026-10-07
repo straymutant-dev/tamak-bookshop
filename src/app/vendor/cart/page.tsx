@@ -1,6 +1,7 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { fetchPaymentAccounts } from '@/lib/paymentAccounts';
 import VendorCartClient from './VendorCartClient';
 
 export default async function VendorCartPage() {
@@ -32,12 +33,15 @@ export default async function VendorCartPage() {
     (profile.credit_limit_pesewas ?? 0) - (profile.outstanding_balance_pesewas ?? 0) - reservedPesewas
   );
 
+  const paymentAccounts = await fetchPaymentAccounts(supabase);
+
   return (
     <VendorCartClient
       availableCreditPesewas={availableCreditPesewas}
       vendorApproved={profile.vendor_status === 'approved'}
       vendorName={profile.full_name ?? 'Vendor'}
       defaultPhone={profile.phone ?? ''}
+      paymentAccounts={paymentAccounts}
     />
   );
 }

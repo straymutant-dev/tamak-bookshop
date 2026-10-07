@@ -53,7 +53,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const { count: waitingCount } = await supabase
     .from('orders')
     .select('id', { count: 'exact', head: true })
-    .eq('order_type', 'storefront_vendor')
+    .in('order_type', ['storefront_vendor', 'storefront_client'])
     .in('payment_status', ['credit_pending', 'payment_pending']);
 
   const { count: walkinOwingCount } = await supabase
@@ -196,7 +196,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           All orders
         </Link>
         <Link href="/admin/orders?tab=vendor" className={tabClass(showVendor)}>
-          Vendor orders
+          To action
           {(waitingCount ?? 0) > 0 && (
             <span className="ml-2 rounded-full bg-accent-terracotta px-2 py-0.5 text-xs font-medium text-white">
               {waitingCount}

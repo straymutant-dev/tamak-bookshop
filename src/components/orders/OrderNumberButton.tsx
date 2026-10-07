@@ -6,6 +6,7 @@ import { formatGHS } from '@/lib/currency';
 import { orderStatusLabel } from '@/lib/orderStatus';
 import { getOrderDetails } from '@/lib/actions/orderDetails';
 import type { OrderDetails } from '@/lib/orderDetailsTypes';
+import PaymentInstructions from '@/components/payments/PaymentInstructions';
 
 const PAYMENT_STATUS_LABEL: Record<string, string> = {
   paid: 'Paid',
@@ -150,6 +151,21 @@ export default function OrderNumberButton({
                     <span>{formatGHS(details.totalPesewas)}</span>
                   </div>
                 </div>
+
+                {details.isOwner && details.paymentStatus === 'payment_pending' && (
+                  <div className="mb-4">
+                    <PaymentInstructions
+                      orderId={details.id}
+                      orderNumber={details.orderNumber}
+                      amountPesewas={details.totalPesewas}
+                      method={details.paymentMethod}
+                      accounts={details.paymentAccounts}
+                      currentReference={details.paymentReference ?? details.chequeNumber}
+                      reportedAt={details.paymentReportedAt}
+                      canReport
+                    />
+                  </div>
+                )}
 
                 <div className="grid gap-1 text-xs text-ink-muted">
                   <p>

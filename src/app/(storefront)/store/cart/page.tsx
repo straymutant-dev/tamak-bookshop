@@ -1,6 +1,7 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { fetchPaymentAccounts } from '@/lib/paymentAccounts';
 import ClientCartPage from './ClientCartPage';
 
 export default async function CartPage() {
@@ -26,5 +27,14 @@ export default async function CartPage() {
     signedInPhone = profile?.phone ?? null;
   }
 
-  return <ClientCartPage signedInName={signedInName} signedInPhone={signedInPhone} />;
+  const paymentAccounts = await fetchPaymentAccounts(supabase);
+
+  return (
+    <ClientCartPage
+      signedInName={signedInName}
+      signedInPhone={signedInPhone}
+      signedIn={Boolean(user)}
+      paymentAccounts={paymentAccounts}
+    />
+  );
 }

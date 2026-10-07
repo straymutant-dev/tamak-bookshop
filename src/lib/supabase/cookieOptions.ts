@@ -4,13 +4,16 @@
 //
 // NEXT_PUBLIC_COOKIE_DOMAIN controls the cookie's domain:
 //   dev (.env.local)        .localhost            -> shared by localhost and admin.localhost
+//   dev, if your browser rejects that  host-only  -> no domain; log in separately on each host
 //   Vercel Production only  .tamakbookshop.com    -> shared by tamakbookshop.com and admin.tamakbookshop.com
 //   Vercel Preview          (leave unset)         -> host-only cookie, so login works on *.vercel.app
 // In `next dev` an unset value falls back to .localhost so local login keeps working.
 export function sessionCookieOptions() {
+  const configured = process.env.NEXT_PUBLIC_COOKIE_DOMAIN;
   const domain =
-    process.env.NEXT_PUBLIC_COOKIE_DOMAIN ||
-    (process.env.NODE_ENV === 'development' ? '.localhost' : undefined);
+    configured === 'host-only'
+      ? undefined
+      : configured || (process.env.NODE_ENV === 'development' ? '.localhost' : undefined);
 
   return {
     ...(domain ? { domain } : {}),
