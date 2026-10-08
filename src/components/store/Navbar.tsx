@@ -17,10 +17,12 @@ export default function Navbar({
   userFullName = null,
   userRole = null,
   crossHostBase,
+  notifications,
 }: {
   userFullName?: string | null;
   userRole?: 'client' | 'vendor' | 'staff' | 'admin' | null;
   crossHostBase?: string;
+  notifications?: React.ReactNode;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -109,6 +111,8 @@ export default function Navbar({
               </span>
             )}
           </Link>
+
+          {isLoggedIn && notifications}
 
           {isLoggedIn ? (
             <button onClick={() => setUserMenuOpen(true)} className="hidden md:block" aria-label="Account menu">

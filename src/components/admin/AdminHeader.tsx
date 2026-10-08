@@ -26,7 +26,15 @@ const ALL_LINKS = [
 { label: 'Payment details', href: '/admin/settings/payments', adminOnly: true },
 ];
 
-export default function AdminHeader({ fullName, role }: { fullName: string | null; role?: string | null }) {
+export default function AdminHeader({
+  fullName,
+  role,
+  notifications,
+}: {
+  fullName: string | null;
+  role?: string | null;
+  notifications?: React.ReactNode;
+}) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -97,6 +105,7 @@ export default function AdminHeader({ fullName, role }: { fullName: string | nul
         </nav>
 
         <div className="flex items-center gap-4">
+          {notifications}
           {fullName && (
             <button onClick={() => setUserMenuOpen(true)} className="hidden md:block" aria-label="Account menu">
               <UserAvatar fullName={fullName} className="h-9 w-9 text-sm" asLink={false} />

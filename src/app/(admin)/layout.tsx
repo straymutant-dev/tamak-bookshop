@@ -6,6 +6,7 @@ import AdminHeader from '@/components/admin/AdminHeader';
 import Footer from '@/components/store/Footer';
 import LiveRefresh from '@/components/ui/LiveRefresh';
 import NotificationToasts from '@/components/notifications/NotificationToasts';
+import NotificationsPanel from '@/components/notifications/NotificationsPanel';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const headersList = await headers();
@@ -33,7 +34,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex min-h-screen flex-col bg-surface-cream">
-      <AdminHeader fullName={profile?.full_name ?? null} role={profile?.role ?? null} />
+      <AdminHeader fullName={profile?.full_name ?? null} role={profile?.role ?? null} notifications={<NotificationsPanel />} />
       <LiveRefresh tables={['orders', 'profiles', 'books', 'repayment_requests', 'credit_repayments', 'audit_logs', 'notifications']} />
       <NotificationToasts />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-8">{children}</main>

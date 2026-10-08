@@ -6,6 +6,7 @@ import Footer from '@/components/store/Footer';
 import AdminHeader from '@/components/admin/AdminHeader';
 import LiveRefresh from '@/components/ui/LiveRefresh';
 import NotificationToasts from '@/components/notifications/NotificationToasts';
+import NotificationsPanel from '@/components/notifications/NotificationsPanel';
 
 export default async function AccountLayout({ children }: { children: React.ReactNode }) {
   const headersList = await headers();
@@ -34,7 +35,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
   if (onAdminHost) {
     return (
       <div className="flex min-h-screen flex-col bg-surface-cream">
-        <AdminHeader fullName={fullName} />
+        <AdminHeader fullName={fullName} notifications={<NotificationsPanel />} />
         <LiveRefresh tables={['orders', 'profiles', 'repayment_requests', 'credit_repayments', 'notifications']} />
         <NotificationToasts />
         <main className="flex-1">{children}</main>
@@ -45,7 +46,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
 
   return (
     <div className="flex min-h-screen flex-col bg-surface-cream">
-      <Navbar userFullName={fullName} userRole={role} />
+      <Navbar userFullName={fullName} userRole={role} notifications={<NotificationsPanel />} />
       <LiveRefresh tables={['orders', 'profiles', 'repayment_requests', 'credit_repayments', 'notifications']} />
       <NotificationToasts />
       <main className="flex-1">{children}</main>
