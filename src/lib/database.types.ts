@@ -474,6 +474,8 @@ export type Database = {
           contact_name: string | null;
           contact_phone: string | null;
           created_at: string;
+          delivery_address: string | null;
+          delivery_notes: string | null;
           discount_pesewas: number;
           fulfillment_type: Database["public"]["Enums"]["fulfillment_type"];
           id: string;
@@ -498,6 +500,8 @@ export type Database = {
           contact_name?: string | null;
           contact_phone?: string | null;
           created_at?: string;
+          delivery_address?: string | null;
+          delivery_notes?: string | null;
           discount_pesewas?: number;
           fulfillment_type?: Database["public"]["Enums"]["fulfillment_type"];
           id?: string;
@@ -522,6 +526,8 @@ export type Database = {
           contact_name?: string | null;
           contact_phone?: string | null;
           created_at?: string;
+          delivery_address?: string | null;
+          delivery_notes?: string | null;
           discount_pesewas?: number;
           fulfillment_type?: Database["public"]["Enums"]["fulfillment_type"];
           id?: string;

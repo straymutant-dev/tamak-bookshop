@@ -42,6 +42,20 @@ export async function submitOrder(formData: FormData) {
     throw new Error('Choose a payment method');
   }
 
+  // Pickup or delivery. Delivery needs an exact location; notes for the rider
+  // are optional. The phone above is reused as the delivery contact number.
+  const fulfillmentType = String(formData.get('fulfillmentType') ?? 'pickup');
+  if (!['pickup', 'delivery'].includes(fulfillmentType)) {
+    throw new Error('Choose pickup or delivery');
+  }
+  let deliveryAddress: string | null = null;
+  let deliveryNotes: string | null = null;
+  if (fulfillmentType === 'delivery') {
+    deliveryAddress = String(formData.get('deliveryAddress') ?? '').trim();
+    if (!deliveryAddress) throw new Error('Enter the exact delivery location');
+    deliveryNotes = String(formData.get('deliveryNotes') ?? '').trim() || null;
+  }
+
   let requestedItems: CheckoutItem[];
   try {
     requestedItems = JSON.parse(itemsRaw);
@@ -94,6 +108,9 @@ export async function submitOrder(formData: FormData) {
       payment_reference: paymentReference,
       // Not "paid" until staff confirm the money arrived (see confirm_vendor_order_payment).
       payment_status: 'payment_pending',
+      fulfillment_type: fulfillmentType,
+      delivery_address: deliveryAddress,
+      delivery_notes: deliveryNotes,
       subtotal_pesewas: subtotalPesewas,
       total_pesewas: totalPesewas,
     })

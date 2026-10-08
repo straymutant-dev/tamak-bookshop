@@ -2,7 +2,7 @@
 import { createClient } from '@/lib/supabase/server';
 import NotificationsList from './NotificationsList';
 
-/** The signed-in user's latest notifications. Works on every dashboard. */
+/** The signed-in user's unread notifications as a dropdown. Once one is read it drops out. */
 export default async function NotificationsPanel() {
   const supabase = await createClient();
   const {
@@ -10,19 +10,13 @@ export default async function NotificationsPanel() {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [{ data: items }, { count: unread }] = await Promise.all([
-    supabase
-      .from('notifications')
-      .select('id, title, body, link, read_at, created_at')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(8),
-    supabase
-      .from('notifications')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .is('read_at', null),
-  ]);
+  const { data: items, count: unread } = await supabase
+    .from('notifications')
+    .select('id, title, body, link, read_at, created_at', { count: 'exact' })
+    .eq('user_id', user.id)
+    .is('read_at', null)
+    .order('created_at', { ascending: false })
+    .limit(20);
 
   return (
     <NotificationsList

@@ -5,7 +5,6 @@ import { formatGHS } from '@/lib/currency';
 import StatRow, { type Stat } from '@/components/admin/StatRow';
 import OrderNumberButton from '@/components/orders/OrderNumberButton';
 import NotificationsPanel from '@/components/notifications/NotificationsPanel';
-import AttentionPanel from '@/components/notifications/AttentionPanel';
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -71,8 +70,6 @@ export default async function AdminDashboardPage() {
     <div>
       <h1 className="mb-1 font-serif text-2xl text-ink">Welcome back, {profile?.full_name}</h1>
       <p className="mb-6 text-sm text-ink-muted">Here&rsquo;s what&rsquo;s happening today.</p>
-
-      <AttentionPanel />
 
       <NotificationsPanel />
 

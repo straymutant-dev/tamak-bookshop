@@ -8,8 +8,10 @@ import { submitOrder } from './actions';
 import PaymentInstructions from '@/components/payments/PaymentInstructions';
 import type { PaymentAccount } from '@/lib/paymentTypes';
 
+type Fulfillment = 'pickup' | 'delivery';
+
 const PAY_METHODS = [
-  { value: 'cash', label: 'Cash on pickup' },
+  { value: 'cash', label: 'Cash' },
   { value: 'mobile_money', label: 'Mobile Money' },
   { value: 'bank_transfer', label: 'Bank transfer' },
 ];
@@ -20,6 +22,8 @@ interface PlacedOrder {
   totalPesewas: number;
   method: string;
   phone: string;
+  fulfillment: Fulfillment;
+  deliveryAddress: string;
 }
 
 export default function ClientCartPage({
@@ -35,13 +39,24 @@ export default function ClientCartPage({
 }) {
   const { items, setQuantity, removeItem, totalPesewas, clear } = useCart();
   const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [fulfillment, setFulfillment] = useState<Fulfillment>('pickup');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [deliveryNotes, setDeliveryNotes] = useState('');
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<PlacedOrder | null>(null);
 
+  const payLabel = (value: string, label: string) =>
+    value === 'cash' ? (fulfillment === 'delivery' ? 'Cash on delivery' : 'Cash on pickup') : label;
+
+  const deliveryOk = fulfillment === 'pickup' || deliveryAddress.trim().length >= 5;
+
   function handleSubmit(formData: FormData) {
     setError(null);
     formData.set('paymentMethod', paymentMethod);
+    formData.set('fulfillmentType', fulfillment);
+    formData.set('deliveryAddress', fulfillment === 'delivery' ? deliveryAddress.trim() : '');
+    formData.set('deliveryNotes', fulfillment === 'delivery' ? deliveryNotes.trim() : '');
     formData.set(
       'items',
       JSON.stringify(items.map((i) => ({ bookId: i.bookId, quantity: i.quantity })))
@@ -56,6 +71,8 @@ export default function ClientCartPage({
           totalPesewas: result.totalPesewas,
           method: paymentMethod,
           phone: String(formData.get('contactPhone') ?? '').trim(),
+          fulfillment,
+          deliveryAddress: deliveryAddress.trim(),
         });
         clear();
       } catch (e) {
@@ -72,6 +89,13 @@ export default function ClientCartPage({
           Your order number is <span className="font-medium text-ink">{confirmation.orderNumber}</span>. It is reserved
           for you once your payment is confirmed.
         </p>
+
+        {confirmation.fulfillment === 'delivery' && (
+          <p className="mb-6 rounded-md bg-surface-cream px-3 py-2 text-center text-sm text-ink">
+            Delivering to <span className="font-medium">{confirmation.deliveryAddress}</span>. We&rsquo;ll call{' '}
+            {confirmation.phone} to arrange it.
+          </p>
+        )}
 
         <PaymentInstructions
           orderId={signedIn ? confirmation.orderId : undefined}
@@ -174,7 +198,52 @@ export default function ClientCartPage({
                 defaultValue={signedInPhone ?? ''}
                 className="rounded-md border border-brand-sage px-3 py-2"
               />
+              {fulfillment === 'delivery' && (
+                <span className="text-xs text-ink-muted">We&rsquo;ll call this number if the rider can&rsquo;t find you.</span>
+              )}
             </label>
+
+            <div className="flex flex-col gap-1 text-sm">
+              Pickup or delivery
+              <div className="flex gap-4">
+                {(['pickup', 'delivery'] as Fulfillment[]).map((f) => (
+                  <label key={f} className="flex items-center gap-2 text-sm text-ink">
+                    <input
+                      type="radio"
+                      name="fulfillmentChoice"
+                      checked={fulfillment === f}
+                      onChange={() => setFulfillment(f)}
+                    />
+                    {f === 'pickup' ? 'I\u2019ll pick it up' : 'Deliver it to me'}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {fulfillment === 'delivery' && (
+              <>
+                <label className="flex flex-col gap-1 text-sm">
+                  Exact delivery location
+                  <input
+                    value={deliveryAddress}
+                    onChange={(e) => setDeliveryAddress(e.target.value)}
+                    placeholder="House/landmark, street, area — e.g. near Kasoa Market, blue gate"
+                    required
+                    className="rounded-md border border-brand-sage px-3 py-2"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm">
+                  Notes for the rider (optional)
+                  <textarea
+                    value={deliveryNotes}
+                    onChange={(e) => setDeliveryNotes(e.target.value)}
+                    rows={2}
+                    placeholder="Landmark, gate code, best time to come, etc."
+                    className="rounded-md border border-brand-sage px-3 py-2"
+                  />
+                </label>
+              </>
+            )}
 
             <div className="flex flex-col gap-1 text-sm">
               Payment method
@@ -186,7 +255,7 @@ export default function ClientCartPage({
                     checked={paymentMethod === m.value}
                     onChange={() => setPaymentMethod(m.value)}
                   />
-                  {m.label}
+                  {payLabel(m.value, m.label)}
                 </label>
               ))}
             </div>
@@ -200,11 +269,14 @@ export default function ClientCartPage({
 
             <button
               type="submit"
-              disabled={isPending}
+              disabled={isPending || !deliveryOk}
               className="mt-2 rounded-md bg-brand-green px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
             >
               {isPending ? 'Placing order…' : 'Place order'}
             </button>
+            {fulfillment === 'delivery' && !deliveryOk && (
+              <p className="text-xs text-accent-terracotta">Enter where we should deliver to.</p>
+            )}
 
             {!signedInName && (
               <p className="text-xs text-ink-muted">

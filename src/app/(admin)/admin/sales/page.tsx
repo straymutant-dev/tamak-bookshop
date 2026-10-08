@@ -75,10 +75,13 @@ export default async function DailySalesPage({ searchParams }: { searchParams: P
     .gte('created_at', start)
     .lt('created_at', end);
 
+  // Both vendor and customer online-order payment confirmations land here, plus
+  // vendor credit approvals (customers have no credit/approval path, so there is
+  // no "online_order_approved" to add alongside it).
   let onlineQuery = supabase
     .from('audit_logs')
     .select('staff_id, action, details_json, created_at')
-    .in('action', ['vendor_order_payment_confirmed', 'vendor_order_approved'])
+    .in('action', ['vendor_order_payment_confirmed', 'online_order_payment_confirmed', 'vendor_order_approved'])
     .gte('created_at', start)
     .lt('created_at', end);
 
@@ -117,7 +120,8 @@ export default async function DailySalesPage({ searchParams }: { searchParams: P
   // Money received from vendors paying off what they owe, and walk-in cheques that cleared.
   const receipts: Receipt[] = [];
 
-  // Online vendor orders: staff confirmed the payment (money) or approved the credit.
+  // Online orders (vendor or customer): staff confirmed the payment (money) or
+  // approved the credit (vendor only).
   for (const a of onlineEvents ?? []) {
     if (!a.staff_id) continue;
     const d = (a.details_json ?? {}) as {

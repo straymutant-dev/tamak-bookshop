@@ -31,6 +31,28 @@ const ROUTE_RULES: RouteRule[] = [
   { prefix: '/admin', allowedRoles: ['admin', 'staff'] },
 ];
 
+// Tells "the server could not be reached" apart from "you are not logged in".
+// Without this, a dropped connection looked exactly like a logout and sent you
+// back to the login page, even though your login was fine.
+function isNetworkError(error: { name?: string; message?: string; status?: number } | null) {
+  if (!error) return false;
+  if (error.name === 'AuthRetryableFetchError') return true;
+  if (typeof error.status === 'number' && (error.status === 0 || error.status >= 500)) return true;
+  return /fetch failed|ECONN|EAI_AGAIN|ETIMEDOUT|ENOTFOUND|network/i.test(error.message ?? '');
+}
+
+function unreachableResponse() {
+  return new NextResponse(
+    `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Can't reach the server</title>
+<body style="font-family:system-ui,sans-serif;max-width:32rem;margin:15vh auto;padding:0 1.5rem;color:#222">
+<h1 style="font-size:1.25rem">Can't reach the server right now</h1>
+<p>Your login is fine. The connection to the database didn't answer. Check your internet connection and refresh this page in a few seconds.</p>
+<p><a href="" onclick="location.reload();return false">Refresh</a></p>`,
+    { status: 503, headers: { 'content-type': 'text/html; charset=utf-8', 'retry-after': '5' } }
+  );
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -56,7 +78,13 @@ export async function updateSession(request: NextRequest) {
 
   const {
     data: { user },
+    error: authError,
   } = await supabase.auth.getUser();
+
+  const authUnreachable = isNetworkError(authError);
+  if (process.env.NODE_ENV === 'development' && authError && authError.name !== 'AuthSessionMissingError') {
+    console.warn('[auth] getUser failed:', authError.name, '-', authError.message);
+  }
 
   const hostname = (request.headers.get('host') ?? request.nextUrl.hostname).split(':')[0];
   const onAdminHost = hostname.startsWith('admin.');
@@ -64,13 +92,20 @@ export async function updateSession(request: NextRequest) {
   const originalPath = request.nextUrl.pathname;
 
   let profile: Profile | null = null;
+  let profileUnreachable = false;
   if (user) {
-    const { data } = await supabase
+    const { data, error: profileError } = await supabase
       .from('profiles')
       .select('role, is_super_admin')
       .eq('id', user.id)
       .single();
     if (data) profile = { role: data.role as Role, is_super_admin: Boolean(data.is_super_admin) };
+    else if (profileError && profileError.code !== 'PGRST116') {
+      profileUnreachable = true;
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[auth] profile lookup failed:', profileError.code, '-', profileError.message);
+      }
+    }
   }
 
   // The customer-facing host must never serve /admin/* — bounce to the admin host.
@@ -111,6 +146,9 @@ export async function updateSession(request: NextRequest) {
   const rule = ROUTE_RULES.find((r) => effectivePath === r.prefix || effectivePath.startsWith(`${r.prefix}/`));
 
   if (rule) {
+    // We could not check who this is. Say so, instead of pretending they are logged out.
+    if (authUnreachable || profileUnreachable) return unreachableResponse();
+
     if (!user) {
       const dest = request.nextUrl.clone();
       if (onAdminHost) {
