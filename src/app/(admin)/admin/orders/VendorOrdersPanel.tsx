@@ -13,7 +13,7 @@ export default async function VendorOrdersPanel() {
   const { data: orders, error } = await supabase
     .from('orders')
     .select(
-      'id, order_number, order_type, user_id, payment_method, payment_reference, payment_reported_at, payment_status, fulfillment_type, total_pesewas, contact_name, contact_phone, created_at, order_items(quantity, unit_price_pesewas, line_total_pesewas, books(title))'
+      'id, order_number, order_type, user_id, payment_method, payment_reference, payment_reported_at, payment_status, fulfillment_type, delivery_address, delivery_notes, total_pesewas, contact_name, contact_phone, created_at, order_items(quantity, unit_price_pesewas, line_total_pesewas, books(title))'
     )
     .in('order_type', ['storefront_vendor', 'storefront_client'])
     .in('payment_status', ['credit_pending', 'payment_pending'])
@@ -60,6 +60,8 @@ export default async function VendorOrdersPanel() {
                 orderNumber: order.order_number,
                 createdAt: order.created_at,
                 fulfillmentType: order.fulfillment_type,
+                deliveryAddress: order.delivery_address,
+                deliveryNotes: order.delivery_notes,
                 totalPesewas: order.total_pesewas,
                 paymentStatus: order.payment_status,
                 paymentMethod: order.payment_method,

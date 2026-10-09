@@ -88,7 +88,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
     let query = supabase
       .from('orders')
       .select(
-        'id, order_number, order_type, payment_method, payment_status, total_pesewas, discount_pesewas, fulfillment_type, order_status, payment_reference, cheque_number, cheque_cleared, contact_name, user_id, staff_id, created_at',
+        'id, order_number, order_type, payment_method, payment_status, total_pesewas, discount_pesewas, fulfillment_type, delivery_address, delivery_notes, order_status, payment_reference, cheque_number, cheque_cleared, contact_name, user_id, staff_id, created_at',
         { count: 'exact' }
       )
       .order('created_at', { ascending: false });

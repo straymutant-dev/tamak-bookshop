@@ -6,7 +6,6 @@ import { formatGHS } from '@/lib/currency';
 import StatRow from '@/components/admin/StatRow';
 import PayBalanceCard from './PayBalanceCard';
 import OrderNumberButton from '@/components/orders/OrderNumberButton';
-import NotificationsPanel from '@/components/notifications/NotificationsPanel';
 
 const STATUS_LABEL: Record<string, string> = {
   pending: 'Pending approval',
@@ -80,8 +79,6 @@ export default async function VendorDashboardPage() {
     <div className="mx-auto max-w-4xl px-6 py-10">
       <h1 className="mb-1 font-serif text-2xl text-ink">Welcome back, {profile?.full_name}</h1>
       <p className="mb-6 text-sm text-ink-muted">{profile?.business_name ?? 'Wholesale vendor account'}</p>
-
-      <NotificationsPanel />
 
       {!isApproved && (
         <div

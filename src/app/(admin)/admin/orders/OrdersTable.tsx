@@ -16,6 +16,8 @@ interface OrderRow {
   total_pesewas: number;
   discount_pesewas: number;
   fulfillment_type: string;
+  delivery_address: string | null;
+  delivery_notes: string | null;
   order_status: string;
   payment_reference: string | null;
   cheque_number: string | null;

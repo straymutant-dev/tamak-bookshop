@@ -93,7 +93,8 @@ export default function ClientCartPage({
         {confirmation.fulfillment === 'delivery' && (
           <p className="mb-6 rounded-md bg-surface-cream px-3 py-2 text-center text-sm text-ink">
             Delivering to <span className="font-medium">{confirmation.deliveryAddress}</span>. We&rsquo;ll call{' '}
-            {confirmation.phone} to arrange it.
+            {confirmation.phone} to arrange it. The total above doesn&rsquo;t include a delivery fee — we&rsquo;ll
+            agree that with you separately.
           </p>
         )}
 
@@ -242,6 +243,9 @@ export default function ClientCartPage({
                     className="rounded-md border border-brand-sage px-3 py-2"
                   />
                 </label>
+                <p className="rounded-md bg-surface-cream px-3 py-2 text-xs text-ink-muted">
+                  Delivery fee isn&rsquo;t included in the total above — we&rsquo;ll arrange that with you separately.
+                </p>
               </>
             )}
 

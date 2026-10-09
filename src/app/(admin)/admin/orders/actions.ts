@@ -28,7 +28,40 @@ async function assertStaffOrAdmin() {
 export async function updateOrderStatus(orderId: string, formData: FormData) {
   const { supabase, staffId } = await assertStaffOrAdmin();
 
-  const fulfillmentType = formData.get('fulfillmentType') as string;
+  // Read the order's own current state rather than trust the form — a
+  // disabled input in the UI is not a security boundary, this is.
+  const { data: existing, error: fetchError } = await supabase
+    .from('orders')
+    .select('payment_status, fulfillment_type, delivery_address, delivery_notes')
+    .eq('id', orderId)
+    .single();
+  if (fetchError || !existing) throw new Error(fetchError?.message ?? 'Order not found');
+
+  // Once staff have confirmed payment or approved credit, the fulfillment
+  // method and delivery details are frozen: whatever the form sends for
+  // them is ignored and the existing values are kept as-is.
+  const isConfirmed = existing.payment_status !== 'payment_pending' && existing.payment_status !== 'credit_pending';
+
+  let fulfillmentType: string;
+  let deliveryAddress: string | null;
+  let deliveryNotes: string | null;
+
+  if (isConfirmed) {
+    fulfillmentType = existing.fulfillment_type;
+    deliveryAddress = existing.delivery_address;
+    deliveryNotes = existing.delivery_notes;
+  } else {
+    fulfillmentType = formData.get('fulfillmentType') as string;
+    if (fulfillmentType === 'delivery') {
+      deliveryAddress = String(formData.get('deliveryAddress') ?? '').trim();
+      if (!deliveryAddress) throw new Error('Enter where this order should be delivered to');
+      deliveryNotes = String(formData.get('deliveryNotes') ?? '').trim() || null;
+    } else {
+      deliveryAddress = null;
+      deliveryNotes = null;
+    }
+  }
+
   const orderStatus = formData.get('orderStatus') as string;
   const discountGhs = formData.get('discount') as string;
   const paymentMethod = formData.get('paymentMethod') as string;
@@ -38,6 +71,8 @@ export async function updateOrderStatus(orderId: string, formData: FormData) {
 
   const updates: Record<string, unknown> = {
     fulfillment_type: fulfillmentType,
+    delivery_address: deliveryAddress,
+    delivery_notes: deliveryNotes,
     order_status: orderStatus,
     discount_pesewas: discountGhs ? ghsToPesewas(Number(discountGhs)) : 0,
   };

@@ -1,8 +1,26 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
+// Path: src/app/vendor/cart/actions.ts
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
 import { normalizeGhanaPhone } from '@/lib/phone';
+
+// Pickup or delivery from the checkout form. Delivery needs an exact location;
+// notes for the rider are optional. Pickup stores no address.
+function readFulfillment(formData: FormData): {
+  type: 'pickup' | 'delivery';
+  address: string | null;
+  notes: string | null;
+} {
+  const type = String(formData.get('fulfillmentType') ?? 'pickup');
+  if (type !== 'pickup' && type !== 'delivery') throw new Error('Choose pickup or delivery');
+  if (type === 'pickup') return { type, address: null, notes: null };
+
+  const address = String(formData.get('deliveryAddress') ?? '').trim();
+  if (address.length < 5) throw new Error('Enter the exact delivery location');
+  const notes = String(formData.get('deliveryNotes') ?? '').trim() || null;
+  return { type, address, notes };
+}
 
 interface CheckoutItem {
   bookId: string;
@@ -30,6 +48,8 @@ export async function submitVendorOrder(formData: FormData) {
 
   const phone = normalizeGhanaPhone(String(formData.get('contactPhone') ?? ''));
   if (!phone) throw new Error('Enter a valid phone number we can reach you on, e.g. 024 123 4567');
+
+  const fulfillment = readFulfillment(formData);
 
   const itemsRaw = String(formData.get('items') ?? '[]');
   let requestedItems: CheckoutItem[];
@@ -99,6 +119,9 @@ export async function submitVendorOrder(formData: FormData) {
       user_id: user.id,
       contact_name: profile.full_name,
       contact_phone: phone,
+      fulfillment_type: fulfillment.type,
+      delivery_address: fulfillment.address,
+      delivery_notes: fulfillment.notes,
       payment_method: 'credit',
       payment_status: 'credit_pending',
       subtotal_pesewas: subtotalPesewas,
@@ -152,6 +175,8 @@ export async function submitVendorOrderImmediatePayment(formData: FormData) {
   const phone = normalizeGhanaPhone(String(formData.get('contactPhone') ?? ''));
   if (!phone) throw new Error('Enter a valid phone number we can reach you on, e.g. 024 123 4567');
 
+  const fulfillment = readFulfillment(formData);
+
   const itemsRaw = String(formData.get('items') ?? '[]');
   let requestedItems: { bookId: string; quantity: number }[];
   try {
@@ -193,6 +218,9 @@ export async function submitVendorOrderImmediatePayment(formData: FormData) {
       user_id: user.id,
       contact_name: profile.full_name,
       contact_phone: phone,
+      fulfillment_type: fulfillment.type,
+      delivery_address: fulfillment.address,
+      delivery_notes: fulfillment.notes,
       payment_method: paymentMethod,
       payment_reference: paymentReference,
       // Not "paid" until staff confirm the money arrived (see confirm_vendor_order_payment).

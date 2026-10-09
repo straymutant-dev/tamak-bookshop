@@ -14,6 +14,8 @@ export interface VendorOrderCardProps {
     totalPesewas: number;
     paymentStatus: string; // 'credit_pending' | 'payment_pending'
     fulfillmentType: string;
+    deliveryAddress: string | null;
+    deliveryNotes: string | null;
     paymentReportedAt: string | null;
     /** vendor = wholesale account order; customer = ordinary online order */
     kind: 'vendor' | 'customer';
@@ -55,6 +57,7 @@ export default function VendorOrderCard({ order, vendor }: VendorOrderCardProps)
   const { showToast } = useToast();
 
   const overLimit = isCredit && vendor.owedPesewas + order.totalPesewas > vendor.limitPesewas;
+  const deliveryMissing = fulfillment === 'delivery' && !order.deliveryAddress;
   const needsRef = method !== 'cash';
   const canConfirm = !(needsRef && !reference.trim()) && !(method === 'cheque' && !chequeCleared);
 
@@ -160,6 +163,26 @@ export default function VendorOrderCard({ order, vendor }: VendorOrderCardProps)
             <option value="delivery">Delivery</option>
           </select>
         </label>
+
+        {fulfillment === 'delivery' && (
+          <div className="sm:col-span-2">
+            {order.deliveryAddress ? (
+              <div className="rounded-md border border-border-beige bg-surface-cream px-3 py-2 text-xs text-ink">
+                <p>
+                  Deliver to: <span className="font-medium">{order.deliveryAddress}</span>
+                </p>
+                {order.deliveryNotes && <p className="mt-1 text-ink-muted">Notes: {order.deliveryNotes}</p>}
+                <p className="mt-1 text-ink-muted">Delivery fee isn&rsquo;t included in the total above.</p>
+              </div>
+            ) : (
+              <p className="rounded-md bg-accent-gold/10 px-3 py-2 text-xs text-accent-gold">
+                No delivery address on file. This order was placed as pickup — call{' '}
+                {order.contactPhone ? order.contactPhone : 'the customer'} for an exact location before approving
+                it as delivery.
+              </p>
+            )}
+          </div>
+        )}
 
         {!isCredit && (
           <label className="flex flex-col gap-1 text-xs text-ink-muted">

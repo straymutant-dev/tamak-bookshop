@@ -9,10 +9,11 @@ import PaymentInstructions from '@/components/payments/PaymentInstructions';
 import type { PaymentAccount } from '@/lib/paymentTypes';
 
 type Method = 'credit' | 'cash' | 'mobile_money' | 'bank_transfer' | 'cheque';
+type Fulfillment = 'pickup' | 'delivery';
 
 const METHOD_LABEL: Record<Method, string> = {
   credit: 'Credit account',
-  cash: 'Cash on pickup',
+  cash: 'Cash',
   mobile_money: 'Mobile Money',
   bank_transfer: 'Bank transfer',
   cheque: 'Cheque',
@@ -40,21 +41,33 @@ export default function VendorCartClient({
     credit: boolean;
     method: string;
     amountPesewas: number;
+    fulfillment: Fulfillment;
+    deliveryAddress: string;
   } | null>(null);
   const [method, setMethod] = useState<Method | null>(null);
   const [paymentReference, setPaymentReference] = useState('');
   const [phone, setPhone] = useState(defaultPhone);
+  const [fulfillment, setFulfillment] = useState<Fulfillment>('pickup');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [deliveryNotes, setDeliveryNotes] = useState('');
 
   const creditOk = availableCreditPesewas > 0 && totalPesewas <= availableCreditPesewas;
   const chosen: Method = method ?? (creditOk ? 'credit' : 'cash');
   const useCredit = chosen === 'credit';
   const overLimit = useCredit && !creditOk;
+  const deliveryOk = fulfillment === 'pickup' || deliveryAddress.trim().length >= 5;
+
+  const methodLabel = (m: Method) =>
+    m === 'cash' ? (fulfillment === 'delivery' ? 'Cash on delivery' : 'Cash on pickup') : METHOD_LABEL[m];
 
   function handleSubmit() {
     setError(null);
     const formData = new FormData();
     formData.set('items', JSON.stringify(items.map((i) => ({ bookId: i.bookId, quantity: i.quantity }))));
     formData.set('contactPhone', phone);
+    formData.set('fulfillmentType', fulfillment);
+    formData.set('deliveryAddress', fulfillment === 'delivery' ? deliveryAddress.trim() : '');
+    formData.set('deliveryNotes', fulfillment === 'delivery' ? deliveryNotes.trim() : '');
 
     startTransition(async () => {
       try {
@@ -72,6 +85,8 @@ export default function VendorCartClient({
           credit: useCredit,
           method: chosen,
           amountPesewas: result.totalPesewas,
+          fulfillment,
+          deliveryAddress: deliveryAddress.trim(),
         });
         clear();
       } catch (e) {
@@ -86,6 +101,12 @@ export default function VendorCartClient({
         <h1 className="mb-2 font-serif text-2xl text-ink">
           {confirmation.credit ? 'Credit order submitted' : 'Order placed'}
         </h1>
+        {confirmation.fulfillment === 'delivery' && (
+          <p className="mb-4 rounded-md bg-surface-cream px-3 py-2 text-sm text-ink">
+            Delivering to <span className="font-medium">{confirmation.deliveryAddress}</span>. The total above
+            doesn&rsquo;t include a delivery fee — we&rsquo;ll agree that with you separately.
+          </p>
+        )}
         {confirmation.credit ? (
           <p className="text-ink-muted">
             Order <span className="font-medium text-ink">{confirmation.orderNumber}</span> is pending staff approval,
@@ -180,6 +201,54 @@ export default function VendorCartClient({
             </label>
           )}
 
+          {vendorApproved && (
+            <div className="mb-4 flex flex-col gap-1 text-sm">
+              Pickup or delivery
+              <div className="flex gap-4">
+                {(['pickup', 'delivery'] as Fulfillment[]).map((f) => (
+                  <label key={f} className="flex items-center gap-2 text-sm text-ink">
+                    <input
+                      type="radio"
+                      name="fulfillmentChoice"
+                      checked={fulfillment === f}
+                      onChange={() => setFulfillment(f)}
+                    />
+                    {f === 'pickup' ? 'We\u2019ll pick it up' : 'Deliver it to us'}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {vendorApproved && fulfillment === 'delivery' && (
+            <div className="mb-4 flex flex-col gap-3">
+              <label className="flex flex-col gap-1 text-sm">
+                Exact delivery location
+                <input
+                  value={deliveryAddress}
+                  onChange={(e) => setDeliveryAddress(e.target.value)}
+                  placeholder="Shop/office address, street, area"
+                  required
+                  className="rounded-md border border-brand-sage px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                Notes for the rider (optional)
+                <textarea
+                  value={deliveryNotes}
+                  onChange={(e) => setDeliveryNotes(e.target.value)}
+                  rows={2}
+                  placeholder="Landmark, gate code, best time to come, etc."
+                  className="rounded-md border border-brand-sage px-3 py-2 text-sm"
+                />
+              </label>
+              <p className="rounded-md bg-surface-cream px-3 py-2 text-xs text-ink-muted">
+                Delivery fee isn&rsquo;t included in the order total below — we&rsquo;ll arrange that with you
+                separately.
+              </p>
+            </div>
+          )}
+
           <div className="mb-4 flex justify-between text-sm">
             <span className="text-ink-muted">Order total</span>
             <span className="font-medium text-ink">{formatGHS(totalPesewas)}</span>
@@ -210,7 +279,7 @@ export default function VendorCartClient({
                       onChange={() => setMethod(m)}
                     />
                     <span>
-                      {METHOD_LABEL[m]}
+                      {methodLabel(m)}
                       {m === 'credit' && (
                         <span className="block text-xs text-ink-muted">
                           Available: {formatGHS(availableCreditPesewas)}
@@ -246,11 +315,14 @@ export default function VendorCartClient({
 
           <button
             onClick={handleSubmit}
-            disabled={isPending || !vendorApproved || overLimit || phone.trim().length < 9}
+            disabled={isPending || !vendorApproved || overLimit || phone.trim().length < 9 || !deliveryOk}
             className="w-full rounded-md bg-brand-green px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
             {isPending ? 'Submitting…' : useCredit ? 'Submit for approval' : 'Place order'}
           </button>
+          {fulfillment === 'delivery' && !deliveryOk && (
+            <p className="mt-2 text-xs text-accent-terracotta">Enter where we should deliver to.</p>
+          )}
 
           <p className="mt-3 text-xs text-ink-muted">
             {useCredit
