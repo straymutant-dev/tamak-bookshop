@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { sessionCookieOptions } from "./cookieOptions";
+import type { Database } from "@/lib/database.types";
 
 /**
  * Supabase client for use in Server Components and Server Actions.
@@ -12,7 +13,7 @@ import { sessionCookieOptions } from "./cookieOptions";
 export async function createClient() {
   const cookieStore = await cookies();
 
-  return createServerClient(
+  return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -45,7 +46,7 @@ export async function createClient() {
  * the caller's role first — it has full read/write access to every table.
  */
 export function createServiceRoleClient() {
-  return createSupabaseClient(
+  return createSupabaseClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {

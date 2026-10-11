@@ -119,12 +119,20 @@ export default function InventoryTable({
           className="rounded-md border border-brand-sage px-3 py-2 text-sm"
         />
 
-        <button
-          onClick={() => setEditingBook('new')}
-          className="ml-auto rounded-md bg-brand-green px-4 py-2 text-sm font-medium text-white"
-        >
-          Add book
-        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <a
+            href={`/admin/inventory/export?${searchParams.toString()}`}
+            className="rounded-md border border-brand-sage px-4 py-2 text-sm font-medium text-ink hover:bg-surface-cream"
+          >
+            Download PDF
+          </a>
+          <button
+            onClick={() => setEditingBook('new')}
+            className="rounded-md bg-brand-green px-4 py-2 text-sm font-medium text-white"
+          >
+            Add book
+          </button>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-md border border-border-beige bg-surface-card">

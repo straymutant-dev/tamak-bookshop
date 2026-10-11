@@ -5,6 +5,14 @@ import { createClient } from '@/lib/supabase/server';
 import type { OrderDetails } from '@/lib/orderDetailsTypes';
 import { fetchPaymentAccounts } from '@/lib/paymentAccounts';
 
+type OrderItemRow = {
+  id: string;
+  quantity: number;
+  unit_price_pesewas: number;
+  line_total_pesewas: number;
+  books: { title: string; author: string | null } | { title: string; author: string | null }[] | null;
+};
+
 /**
  * The exact books on one order. Uses the signed-in user's own session, so the
  * database rules decide who can see what: customers and vendors see only their
@@ -20,7 +28,7 @@ export async function getOrderDetails(orderId: string): Promise<OrderDetails> {
   const { data: order, error } = await supabase
     .from('orders')
     .select(
-      'id, order_number, user_id, payment_reported_at, created_at, payment_method, payment_status, payment_reference, cheque_number, fulfillment_type, order_status, subtotal_pesewas, discount_pesewas, total_pesewas, contact_name, contact_phone, order_items(id, quantity, unit_price_pesewas, line_total_pesewas, books(title, author))'
+      'id, order_number, user_id, payment_reported_at, created_at, payment_method, payment_status, payment_reference, cheque_number, fulfillment_type, delivery_address, delivery_notes, order_status, subtotal_pesewas, discount_pesewas, total_pesewas, contact_name, contact_phone, order_items(id, quantity, unit_price_pesewas, line_total_pesewas, books(title, author))'
     )
     .eq('id', orderId)
     .single();
@@ -40,6 +48,8 @@ export async function getOrderDetails(orderId: string): Promise<OrderDetails> {
     paymentReference: order.payment_reference,
     chequeNumber: order.cheque_number,
     fulfillmentType: order.fulfillment_type,
+    deliveryAddress: order.delivery_address,
+    deliveryNotes: order.delivery_notes,
     orderStatus: order.order_status,
     subtotalPesewas: order.subtotal_pesewas,
     discountPesewas: order.discount_pesewas,
@@ -49,7 +59,7 @@ export async function getOrderDetails(orderId: string): Promise<OrderDetails> {
     isOwner,
     paymentReportedAt: order.payment_reported_at,
     paymentAccounts,
-    items: (order.order_items ?? []).map((item) => {
+    items: (order.order_items ?? []).map((item: OrderItemRow) => {
       const book = Array.isArray(item.books) ? item.books[0] : item.books;
       return {
         id: item.id,

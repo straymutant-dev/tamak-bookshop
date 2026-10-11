@@ -28,26 +28,246 @@ body {
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
-/* 80mm Thermal Receipt Slip Styles */
+/* A4 receipt — rendered by <Receipt> via portal into <body>.
+   Invisible on screen; on print, everything else is removed. */
+@page {
+  size: A4;
+  margin: 14mm;
+}
+ 
+#receipt-root {
+  display: none;
+}
+ 
 @media print {
-  body * {
-    visibility: hidden;
+  /* Reset anything the site layout puts on html/body (min-widths, flex, padding) that could
+     make the receipt wider than the paper. */
+  html,
+  body {
+    display: block !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #ffffff !important;
   }
-  #thermal-receipt,
-  #thermal-receipt * {
-    visibility: visible;
+  body > *:not(#receipt-root) {
+    display: none !important;
   }
-  #thermal-receipt {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 80mm;
+  #receipt-root {
+    display: block !important;
+    width: 100%;
     margin: 0;
-    padding: 3mm 4mm;
-    font-family: var(--font-geist-mono), 'Courier New', Courier, monospace;
-    font-size: 11px;
-    line-height: 1.3;
-    color: #000000;
-    background: #ffffff;
+    padding: 0;
   }
 }
+ 
+/* A4 (210mm) minus the two 14mm margins = 182mm of usable width. */
+#printable-receipt,
+#printable-receipt * {
+  box-sizing: border-box;
+}
+#printable-receipt {
+  width: 182mm;
+  max-width: 100%;
+  margin: 0 auto;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #000000;
+  background: #ffffff;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+ 
+/* ---- Header ---- */
+.rcpt-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 10px;
+  border-bottom: 3px solid #164a41;
+}
+.rcpt-logo {
+  height: 56px;
+  width: auto;
+  max-width: 62mm;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.rcpt-shop {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+.rcpt-shop-name {
+  margin-bottom: 3px;
+  font-size: 13.5px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+  color: #164a41;
+  overflow-wrap: anywhere;
+}
+ 
+/* ---- Title bar ---- */
+.rcpt-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px 0 12px;
+}
+.rcpt-title {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #164a41;
+}
+.rcpt-badge {
+  padding: 3px 12px;
+  border: 1.5px solid #b45309;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #b45309;
+  white-space: nowrap;
+}
+ 
+/* ---- Details box ---- */
+.rcpt-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 24px;
+  margin-bottom: 14px;
+  padding: 4px 12px;
+  border: 1px solid #d6d0c4;
+  border-radius: 6px;
+  background: #faf8f3;
+}
+.rcpt-meta > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px dotted #c9c3b6;
+}
+.rcpt-meta > div:last-child {
+  border-bottom: 0;
+}
+.rcpt-meta span {
+  flex-shrink: 0;
+  color: #666666;
+}
+.rcpt-meta strong {
+  min-width: 0;
+  font-weight: 600;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+ 
+/* ---- Items ---- */
+.rcpt-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.rcpt-table thead {
+  display: table-header-group;
+}
+.rcpt-table th {
+  padding: 7px 8px;
+  background: #f1ede4;
+  border-bottom: 1.5px solid #164a41;
+  text-align: left;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+}
+.rcpt-table td {
+  padding: 7px 8px;
+  border-bottom: 1px solid #e2ddd1;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.rcpt-table tr {
+  break-inside: avoid;
+}
+.rcpt-idx {
+  width: 9mm;
+}
+.rcpt-qty {
+  width: 14mm;
+}
+.rcpt-money {
+  width: 29mm;
+}
+.rcpt-num {
+  text-align: right !important;
+  white-space: nowrap;
+}
+ 
+/* ---- Totals ---- */
+.rcpt-totals {
+  width: 62%;
+  margin: 14px 0 0 auto;
+  break-inside: avoid;
+  font-variant-numeric: tabular-nums;
+}
+.rcpt-totals > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 10px;
+}
+.rcpt-totals > .rcpt-total {
+  margin-bottom: 4px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: #164a41;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+}
+.rcpt-strong {
+  font-weight: 800;
+}
+ 
+/* ---- Credit notice ---- */
+.rcpt-credit {
+  margin: 18px 0 0;
+  padding: 10px 12px;
+  border: 2px solid #000000;
+  border-radius: 6px;
+  background: #fff7e6;
+  text-align: center;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  break-inside: avoid;
+}
+.rcpt-credit-sub {
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+ 
+/* ---- Footer ---- */
+.rcpt-foot {
+  margin-top: 26px;
+  padding-top: 10px;
+  border-top: 1px solid #bbbbbb;
+  text-align: center;
+  font-size: 11px;
+  color: #444444;
+  break-inside: avoid;
+}
+ 

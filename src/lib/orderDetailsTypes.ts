@@ -11,6 +11,8 @@ export interface OrderDetails {
   paymentReference: string | null;
   chequeNumber: string | null;
   fulfillmentType: string;
+  deliveryAddress: string | null;
+  deliveryNotes: string | null;
   orderStatus: string;
   subtotalPesewas: number;
   discountPesewas: number;

@@ -186,6 +186,21 @@ export default function OrderNumberButton({
                     <span className="capitalize text-ink">{details.fulfillmentType}</span> ·{' '}
                     <span className="text-ink">{orderStatusLabel(details.orderStatus, details.fulfillmentType)}</span>
                   </p>
+                  {details.fulfillmentType === 'delivery' && (
+                    <p>
+                      Deliver to:{' '}
+                      <span className="text-ink">{details.deliveryAddress ?? 'Not recorded'}</span>
+                      {details.deliveryNotes && (
+                        <>
+                          {' '}
+                          · Notes: <span className="text-ink">{details.deliveryNotes}</span>
+                        </>
+                      )}
+                    </p>
+                  )}
+                  {details.fulfillmentType === 'delivery' && (
+                    <p className="text-ink-muted">Delivery fee isn&rsquo;t included in the total above.</p>
+                  )}
                   {details.contactName && (
                     <p>
                       Customer: <span className="text-ink">{details.contactName}</span>

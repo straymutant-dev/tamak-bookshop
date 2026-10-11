@@ -16,7 +16,11 @@ export default function ReprintButton({ orderId }: { orderId: string }) {
       try {
         const result = await getReceiptForReprint(orderId);
         setReceipt(result);
-        setTimeout(() => window.print(), 100);
+        // Wait for portal to mount, print (blocks until dialog closes), then unmount.
+        setTimeout(() => {
+          window.print();
+          setReceipt(null);
+        }, 100);
         showToast('Receipt reprinted');
       } catch (e) {
         showToast(e instanceof Error ? e.message : 'Failed to reprint', 'error');
@@ -33,11 +37,7 @@ export default function ReprintButton({ orderId }: { orderId: string }) {
       >
         {isPending ? 'Preparing…' : 'Reprint'}
       </button>
-      {receipt && (
-        <div className="hidden print:block">
-          <Receipt sale={receipt.sale} cashierName={receipt.cashierName} />
-        </div>
-      )}
+      {receipt && <Receipt sale={receipt.sale} cashierName={receipt.cashierName} />}
     </>
   );
 }
