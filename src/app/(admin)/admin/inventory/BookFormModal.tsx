@@ -63,6 +63,7 @@ export default function BookFormModal({
               <input
                 name="author"
                 defaultValue={book?.author ?? ''}
+                required
                 className="rounded-md border border-brand-sage px-3 py-2"
               />
             </label>
@@ -75,6 +76,7 @@ export default function BookFormModal({
                 name="category"
                 defaultValue={book?.category ?? ''}
                 placeholder="Textbook, Workbook, Past Questions…"
+                required
                 className="rounded-md border border-brand-sage px-3 py-2"
               />
             </label>
@@ -177,9 +179,10 @@ export default function BookFormModal({
             <input
               name="cover"
               type="file"
-              accept="image/*"
+              accept="image/png,image/jpeg"
               className="rounded-md border border-brand-sage px-3 py-2"
             />
+            <span className="text-xs text-ink-muted">PNG or JPEG only.</span>
           </label>
 
           <div className="mt-2 flex justify-end gap-3">

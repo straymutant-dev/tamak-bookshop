@@ -59,13 +59,15 @@ export async function inviteAdmin(formData: FormData) {
 export async function demoteAdmin(formData: FormData) {
   const actorId = await assertSuperAdmin();
   const targetId = String(formData.get('userId') ?? '');
-  const newRole = String(formData.get('newRole') ?? 'staff');
+  const newRole = (['staff', 'vendor', 'client'] as const).find(
+    (r) => r === (formData.get('newRole') ?? 'staff'),
+  );
 
   if (!targetId) throw new Error('Missing user');
   if (targetId === actorId) {
     throw new Error("You can't demote your own account here — use the Supabase dashboard for that");
   }
-  if (!['staff', 'vendor', 'client'].includes(newRole)) {
+  if (!newRole) {
     throw new Error('Invalid target role');
   }
 

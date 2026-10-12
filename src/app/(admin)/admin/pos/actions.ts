@@ -17,11 +17,13 @@ export async function submitPosSale(formData: FormData) {
   if (!user) throw new Error('Not authenticated');
 
   const customerName = String(formData.get('customerName') ?? '').trim() || null;
-  const paymentMethod = String(formData.get('paymentMethod') ?? '');
+  const paymentMethod = (['cash', 'mobile_money', 'bank_transfer'] as const).find(
+    (m) => m === formData.get('paymentMethod'),
+  );
   const paymentReference = String(formData.get('paymentReference') ?? '').trim() || null;
   const itemsRaw = String(formData.get('items') ?? '[]');
 
-  if (!['cash', 'mobile_money', 'bank_transfer'].includes(paymentMethod)) {
+  if (!paymentMethod) {
     throw new Error('Choose a payment method');
   }
 

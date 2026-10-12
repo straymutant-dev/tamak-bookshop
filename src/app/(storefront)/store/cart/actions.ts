@@ -32,20 +32,24 @@ export async function submitOrder(formData: FormData) {
     if (profile?.full_name) contactName = profile.full_name;
     if (!contactPhone && profile?.phone) contactPhone = profile.phone;
   }
-  const paymentMethod = String(formData.get('paymentMethod') ?? '');
+  const paymentMethod = (['cash', 'mobile_money', 'bank_transfer'] as const).find(
+    (m) => m === formData.get('paymentMethod'),
+  );
   // The reference is given AFTER paying (it can't be known yet), so none is taken here.
   const paymentReference: string | null = null;
   const itemsRaw = String(formData.get('items') ?? '[]');
 
   if (!contactName || !contactPhone) throw new Error('Name and phone are required');
-  if (!['cash', 'mobile_money', 'bank_transfer'].includes(paymentMethod)) {
+  if (!paymentMethod) {
     throw new Error('Choose a payment method');
   }
 
   // Pickup or delivery. Delivery needs an exact location; notes for the rider
   // are optional. The phone above is reused as the delivery contact number.
-  const fulfillmentType = String(formData.get('fulfillmentType') ?? 'pickup');
-  if (!['pickup', 'delivery'].includes(fulfillmentType)) {
+  const fulfillmentType = (['pickup', 'delivery'] as const).find(
+    (f) => f === (formData.get('fulfillmentType') ?? 'pickup'),
+  );
+  if (!fulfillmentType) {
     throw new Error('Choose pickup or delivery');
   }
   let deliveryAddress: string | null = null;

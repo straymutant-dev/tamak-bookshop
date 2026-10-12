@@ -1,19 +1,10 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf-lib';
+import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage, type PDFPage } from 'pdf-lib';
 import { createClient } from '@/lib/supabase/server';
 import type { Database } from '@/lib/database.types';
+import { CLASS_LEVELS } from '@/lib/types';
 
 type BookRow = Database['public']['Tables']['books']['Row'];
-const CLASS_LEVELS: readonly NonNullable<BookRow['class_level']>[] = [
-  'KG',
-  'Primary 1-3',
-  'Primary 4-6',
-  'JHS 1-3',
-  'SHS 1-3',
-  'Tertiary',
-  'General',
-];
-
 export const runtime = 'nodejs';
 
 // Same store-wide "low stock" rule as InventoryTable.
@@ -185,7 +176,7 @@ export async function GET(request: Request) {
 
   // Logo — fetched from the public folder (same file the receipt uses).
   // If it can't be loaded the header simply falls back to text only.
-  let logo: Awaited<ReturnType<typeof pdf.embedPng>> | null = null;
+  let logo: PDFImage | null = null;
   try {
     const res = await fetch(new URL('/images/logo.png', request.url));
     if (res.ok) {
@@ -419,7 +410,7 @@ export async function GET(request: Request) {
   const bytes = await pdf.save();
   const filename = `tamak-inventory-${new Date().toISOString().slice(0, 10)}.pdf`;
 
-  return new Response(Buffer.from(bytes), {
+  return new Response(new Uint8Array(bytes), {
     headers: {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="${filename}"`,

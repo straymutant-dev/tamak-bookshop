@@ -1,7 +1,7 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { CLASS_LEVELS } from '@/lib/types';
+import { CLASS_LEVELS, type ClassLevel } from '@/lib/types';
 import BookCard from '@/components/store/BookCard';
 import ScrollReveal from '@/components/ui/ScrollReveal';
 
@@ -28,7 +28,7 @@ export default async function StorePage({
   let query = supabase.from('books').select('*').order('title', { ascending: true });
 
   if (params.search) query = query.ilike('title', `%${params.search}%`);
-  if (params.class_level) query = query.eq('class_level', params.class_level);
+  if (params.class_level) query = query.eq('class_level', params.class_level as ClassLevel);
   if (params.category) query = query.eq('category', params.category);
   if (params.subject) query = query.eq('subject', params.subject);
   const { data: books, error } = await query;

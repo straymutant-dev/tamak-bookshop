@@ -1,5 +1,5 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
-// Path: src/app/vendor/cart/actions.ts
+
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -166,8 +166,10 @@ export async function submitVendorOrderImmediatePayment(formData: FormData) {
     throw new Error('Your wholesale account is not yet approved');
   }
 
-  const paymentMethod = String(formData.get('paymentMethod') ?? '');
-  if (!['cash', 'mobile_money', 'bank_transfer', 'cheque'].includes(paymentMethod)) {
+  const paymentMethod = (['cash', 'mobile_money', 'bank_transfer', 'cheque'] as const).find(
+    (m) => m === formData.get('paymentMethod'),
+  );
+  if (!paymentMethod) {
     throw new Error('Choose a payment method');
   }
   const paymentReference = String(formData.get('paymentReference') ?? '').trim() || null;

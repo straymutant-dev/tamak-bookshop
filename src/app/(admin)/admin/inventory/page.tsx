@@ -1,7 +1,7 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
 import { createClient } from '@/lib/supabase/server';
 import InventoryTable from './InventoryTable';
-import { CLASS_LEVELS } from '@/lib/types';
+import { CLASS_LEVELS, type ClassLevel } from '@/lib/types';
 
 export default async function InventoryPage({
   searchParams,
@@ -18,7 +18,7 @@ export default async function InventoryPage({
 
   if (params.category) query = query.eq('category', params.category);
   if (params.subject) query = query.eq('subject', params.subject);
-  if (params.class_level) query = query.eq('class_level', params.class_level);
+  if (params.class_level) query = query.eq('class_level', params.class_level as ClassLevel);
   if (params.academic_year) query = query.eq('academic_year', params.academic_year);
 
   const { data: books, error } = await query;

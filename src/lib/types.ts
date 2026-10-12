@@ -1,4 +1,7 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
+import type { Database } from '@/lib/database.types';
+
+// Levels the shop sells (the UI lists). 'Tertiary' stays in the DB enum only.
 export type ClassLevel =
   | 'KG'
   | 'Primary 1-3'
@@ -22,7 +25,8 @@ export interface Book {
   author: string | null;
   category: string | null;
   subject: string | null;
-  class_level: ClassLevel | null;
+  // Whatever the database holds, so rows from Supabase always fit this type.
+  class_level: Database['public']['Enums']['class_grade_level'] | null;
   academic_year: string | null;
   buying_cost_pesewas: number;
   customer_price_pesewas: number;
@@ -35,7 +39,7 @@ export interface Book {
   updated_at: string;
 }
 
-export type VendorStatus = 'pending' | 'approved' | 'rejected' | 'frozen';
+export type VendorStatus = 'not_applicable' | 'pending' | 'approved' | 'rejected' | 'frozen';
 
 export interface VendorProfile {
   id: string;

@@ -4,6 +4,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { ghsToPesewas } from '@/lib/currency';
+import type { Database, Json } from '@/lib/database.types';
 
 async function assertStaffOrAdmin() {
   const supabase = await createClient();
@@ -69,11 +70,12 @@ export async function updateOrderStatus(orderId: string, formData: FormData) {
   const chequeNumber = formData.get('chequeNumber') as string;
   const chequeCleared = formData.get('chequeCleared') as string;
 
-  const updates: Record<string, unknown> = {
-    fulfillment_type: fulfillmentType,
+  type OrderUpdate = Database['public']['Tables']['orders']['Update'];
+  const updates: OrderUpdate = {
+    fulfillment_type: fulfillmentType as OrderUpdate['fulfillment_type'],
     delivery_address: deliveryAddress,
     delivery_notes: deliveryNotes,
-    order_status: orderStatus,
+    order_status: orderStatus as OrderUpdate['order_status'],
     discount_pesewas: discountGhs ? ghsToPesewas(Number(discountGhs)) : 0,
   };
 
@@ -94,7 +96,7 @@ export async function updateOrderStatus(orderId: string, formData: FormData) {
     action: 'order_status_updated',
     entity_type: 'orders',
     entity_id: orderId,
-    details_json: updates,
+    details_json: updates as Json,
   });
 
   revalidatePath('/admin/orders');
