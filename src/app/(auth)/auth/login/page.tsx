@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { login } from './actions';
 import PasswordInput from '@/components/ui/PasswordInput';
+import Turnstile from '@/components/ui/Turnstile';
 
 export default async function LoginPage({
   searchParams,
@@ -41,6 +42,8 @@ export default async function LoginPage({
         <Link href="/auth/forgot-password" className="-mt-2 self-end text-xs font-medium text-brand-green hover:underline">
           Forgot password?
         </Link>
+
+        <Turnstile />
 
         <button type="submit" className="mt-2 rounded-md bg-brand-green px-4 py-2 font-medium text-white">
           Sign in

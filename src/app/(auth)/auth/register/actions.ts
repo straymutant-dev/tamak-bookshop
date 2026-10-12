@@ -2,6 +2,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { CAPTCHA_MESSAGE, captchaTokenFrom, isCaptchaError } from '@/lib/captcha';
 
 export async function registerClient(formData: FormData) {
   const email = String(formData.get('email') ?? '');
@@ -17,11 +18,12 @@ export async function registerClient(formData: FormData) {
     options: {
       data: { full_name: fullName, phone, role: 'client' },
       emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm?type=signup`,
+      captchaToken: captchaTokenFrom(formData),
     },
   });
 
   if (error || !data.user) {
-    return { error: error?.message ?? 'Registration failed' };
+    return { error: isCaptchaError(error?.message) ? CAPTCHA_MESSAGE : (error?.message ?? 'Registration failed') };
   }
 
   return { success: true };
@@ -48,11 +50,12 @@ export async function registerVendor(formData: FormData) {
         vendor_status: 'pending',
       },
       emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm?type=signup`,
+      captchaToken: captchaTokenFrom(formData),
     },
   });
 
   if (error || !data.user) {
-    return { error: error?.message ?? 'Registration failed' };
+    return { error: isCaptchaError(error?.message) ? CAPTCHA_MESSAGE : (error?.message ?? 'Registration failed') };
   }
 
   return { success: true };

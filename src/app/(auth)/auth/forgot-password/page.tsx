@@ -4,12 +4,15 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import Turnstile, { TURNSTILE_ENABLED } from '@/components/ui/Turnstile';
+import { CAPTCHA_MESSAGE, isCaptchaError } from '@/lib/captcha';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState('');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -19,11 +22,12 @@ export default function ForgotPasswordPage() {
     const supabase = createClient();
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/confirm?type=recovery`,
+      captchaToken: captchaToken || undefined,
     });
 
     setLoading(false);
     if (resetError) {
-      setError(resetError.message);
+      setError(isCaptchaError(resetError.message) ? CAPTCHA_MESSAGE : resetError.message);
       return;
     }
     setSent(true);
@@ -63,9 +67,11 @@ export default function ForgotPasswordPage() {
           />
         </label>
 
+        <Turnstile onToken={setCaptchaToken} />
+
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || (TURNSTILE_ENABLED && !captchaToken)}
           className="mt-2 rounded-md bg-brand-green px-4 py-2 font-medium text-white disabled:opacity-50"
         >
           {loading ? 'Sending…' : 'Send reset link'}

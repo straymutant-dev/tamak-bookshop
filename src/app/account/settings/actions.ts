@@ -4,6 +4,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { CAPTCHA_MESSAGE, captchaTokenFrom, isCaptchaError } from '@/lib/captcha';
 
 export async function updateProfile(formData: FormData) {
   const supabase = await createClient();
@@ -21,8 +22,11 @@ export async function updateProfile(formData: FormData) {
   const { error: verifyError } = await supabase.auth.signInWithPassword({
     email: user.email,
     password: currentPassword,
+    options: { captchaToken: captchaTokenFrom(formData) },
   });
-  if (verifyError) throw new Error('Current password is incorrect');
+  if (verifyError) {
+    throw new Error(isCaptchaError(verifyError.message) ? CAPTCHA_MESSAGE : 'Current password is incorrect');
+  }
 
   const { error } = await supabase.from('profiles').update({ full_name: fullName, phone }).eq('id', user.id);
   if (error) throw new Error(error.message);
@@ -47,8 +51,11 @@ export async function updatePassword(formData: FormData) {
   const { error: verifyError } = await supabase.auth.signInWithPassword({
     email: user.email,
     password: currentPassword,
+    options: { captchaToken: captchaTokenFrom(formData) },
   });
-  if (verifyError) throw new Error('Current password is incorrect');
+  if (verifyError) {
+    throw new Error(isCaptchaError(verifyError.message) ? CAPTCHA_MESSAGE : 'Current password is incorrect');
+  }
 
   const { error } = await supabase.auth.updateUser({ password: newPassword });
   if (error) throw new Error(error.message);

@@ -8,6 +8,7 @@ import { registerClient, registerVendor } from './actions';
 import PasswordInput from '@/components/ui/PasswordInput';
 import PasswordStrengthMeter from '@/components/ui/PasswordStrengthMeter';
 import CheckEmailNotice from '@/components/ui/CheckEmailNotice';
+import Turnstile, { TURNSTILE_ENABLED } from '@/components/ui/Turnstile';
 
 export default function RegisterPage() {
   const searchParams = useSearchParams();
@@ -17,16 +18,17 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState('');
   const passwordMismatch = confirmPassword.length > 0 && password !== confirmPassword;
 
   async function handleSubmit(formData: FormData) {
     const email = String(formData.get('email') ?? '');
     const action = accountType === 'client' ? registerClient : registerVendor;
+    setError(null);
     const result = await action(formData);
     if (result?.error) {
-      // Errors still render via the ?error= param on a fresh load, since
-      // the server action redirects on failure — this branch only
-      // handles the success case reaching back here without a redirect.
+      setError(result.error);
       return;
     }
     setSubmittedEmail(email);
@@ -44,6 +46,8 @@ export default function RegisterPage() {
       {searchParams.get('error') && (
         <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{searchParams.get('error')}</p>
       )}
+
+      {error && <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
       <div className="mb-6 flex rounded-md border border-brand-sage p-1">
         <button
@@ -121,9 +125,11 @@ export default function RegisterPage() {
         </label>
         {passwordMismatch && <p className="text-xs text-red-700">Passwords do not match.</p>}
 
+        <Turnstile onToken={setCaptchaToken} />
+
         <button
           type="submit"
-          disabled={passwordMismatch || confirmPassword.length === 0}
+          disabled={passwordMismatch || confirmPassword.length === 0 || (TURNSTILE_ENABLED && !captchaToken)}
           className="mt-2 rounded-md bg-brand-green px-4 py-2 font-medium text-white disabled:opacity-50"
         >
           {accountType === 'client' ? 'Create account' : 'Submit for approval'}

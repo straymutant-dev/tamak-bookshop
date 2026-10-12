@@ -3,6 +3,7 @@
 
 import { redirect } from 'next/navigation';
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
+import { CAPTCHA_MESSAGE, captchaTokenFrom, isCaptchaError } from '@/lib/captcha';
 
 const MAX_FAILED_ATTEMPTS = 6;
 const LOCKOUT_MINUTES = 15;
@@ -37,7 +38,16 @@ export async function login(formData: FormData) {
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+    options: { captchaToken: captchaTokenFrom(formData) },
+  });
+
+  // A failed security check is not a wrong password: don't count it towards the lockout.
+  if (isCaptchaError(error?.message)) {
+    redirect(`/auth/login?error=${encodeURIComponent(CAPTCHA_MESSAGE)}`);
+  }
 
   if (error || !data.user) {
     const nextCount = (attempt?.failed_count ?? 0) + 1;

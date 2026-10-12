@@ -1,6 +1,7 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
 import PasswordInput from '@/components/ui/PasswordInput';
 import { adminLogin } from './actions';
+import Turnstile from '@/components/ui/Turnstile';
 
 export default async function AdminLoginPage({
   searchParams,
@@ -27,6 +28,7 @@ export default async function AdminLoginPage({
           Password
           <PasswordInput name="password" required className="rounded-md border border-brand-sage px-3 py-2" />
         </label>
+        <Turnstile />
         <button type="submit" className="mt-2 rounded-md bg-brand-green px-4 py-2 font-medium text-white">
           Sign in
         </button>
