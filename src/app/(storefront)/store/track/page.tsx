@@ -1,14 +1,21 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
+
 'use client';
 
 import { useState } from 'react';
 import { formatGHS } from '@/lib/currency';
 import { orderStatusLabel } from '@/lib/orderStatus';
+import PaymentInstructions from '@/components/payments/PaymentInstructions';
+import type { PaymentAccount } from '@/lib/paymentTypes';
 
 interface TrackedOrder {
   order_number: string;
   payment_method: string;
   payment_status: string;
+  payment_reference: string | null;
+  payment_reported_at: string | null;
+  cheque_number: string | null;
+  can_report: boolean;
   total_pesewas: number;
   discount_pesewas: number;
   fulfillment_type: string;
@@ -17,8 +24,18 @@ interface TrackedOrder {
   order_items: { quantity: number; unit_price_pesewas: number; books: { title: string } }[];
 }
 
+const PAYMENT_STATUS_LABEL: Record<string, string> = {
+  paid: 'Paid',
+  payment_pending: 'Awaiting payment confirmation',
+  credit_pending: 'Credit — awaiting approval',
+  credit_approved: 'On credit — not yet paid',
+  partially_paid: 'Part paid',
+};
+
 export default function TrackOrderPage() {
   const [order, setOrder] = useState<TrackedOrder | null>(null);
+  const [accounts, setAccounts] = useState<PaymentAccount[]>([]);
+  const [lookupPhone, setLookupPhone] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -26,20 +43,24 @@ export default function TrackOrderPage() {
     e.preventDefault();
     setError(null);
     setOrder(null);
+    setAccounts([]);
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
+    const phone = String(formData.get('phone') ?? '');
     try {
       const res = await fetch('/api/orders/track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           orderNumber: formData.get('orderNumber'),
-          phone: formData.get('phone'),
+          phone,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Order not found');
+      setLookupPhone(phone);
+      setAccounts(data.paymentAccounts ?? []);
       setOrder(data.order);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong');
@@ -47,6 +68,8 @@ export default function TrackOrderPage() {
       setLoading(false);
     }
   }
+
+  const awaitingPayment = order?.payment_status === 'payment_pending';
 
   return (
     <div className="mx-auto max-w-md px-6 py-16">
@@ -103,6 +126,33 @@ export default function TrackOrderPage() {
             <span>Total</span>
             <span>{formatGHS(order.total_pesewas)}</span>
           </div>
+
+          <p className="mt-3 text-xs text-ink-muted">
+            Payment: <span className="capitalize text-ink">{order.payment_method.replace('_', ' ')}</span> ·{' '}
+            <span className="text-ink">{PAYMENT_STATUS_LABEL[order.payment_status] ?? order.payment_status}</span>
+          </p>
+        </div>
+      )}
+
+      {order && awaitingPayment && (
+        <div className="mt-4">
+          <PaymentInstructions
+            key={order.order_number}
+            orderNumber={order.order_number}
+            amountPesewas={order.total_pesewas}
+            method={order.payment_method}
+            accounts={accounts}
+            currentReference={order.payment_reference ?? order.cheque_number}
+            reportedAt={order.payment_reported_at}
+            canReport={order.can_report}
+            guestPhone={lookupPhone}
+          />
+          {!order.can_report && (
+            <p className="mt-3 text-xs text-ink-muted">
+              This order belongs to a registered account. Log in and open <span className="text-ink">My orders</span>{' '}
+              to tell us once you have paid.
+            </p>
+          )}
         </div>
       )}
     </div>
