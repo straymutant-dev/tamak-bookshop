@@ -53,19 +53,14 @@ function unreachableResponse() {
   );
 }
 
-// Browser / crawler files that must be served as-is on BOTH hosts. Without this the admin
-// host would rewrite /robots.txt to /admin/robots.txt (a 404), and the admin tab would have no icon.
-const METADATA_PATHS = new Set([
-  '/robots.txt',
-  '/sitemap.xml',
-  '/manifest.webmanifest',
-  '/icon',
-  '/apple-icon',
-  '/opengraph-image',
-]);
+// Crawler / browser files that must be served as-is on BOTH hosts. Without this the admin
+// host would rewrite /robots.txt to /admin/robots.txt (a 404). Image files (favicon.ico,
+// icon.png, apple-icon.png, opengraph-image.png, /icons/*.png) never reach this code:
+// the matcher in src/middleware.ts already skips favicon.ico and .png/.svg/.jpg files.
+const METADATA_PATHS = new Set(['/robots.txt', '/sitemap.xml', '/manifest.webmanifest']);
 
 function isMetadataRoute(pathname: string) {
-  return METADATA_PATHS.has(pathname) || pathname.startsWith('/pwa-icon/');
+  return METADATA_PATHS.has(pathname);
 }
 
 export async function updateSession(request: NextRequest) {
