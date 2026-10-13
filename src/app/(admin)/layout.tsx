@@ -31,7 +31,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, full_name')
+    .select('role, full_name, is_super_admin')
     .eq('id', user.id)
     .single();
 
@@ -40,7 +40,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex min-h-screen flex-col bg-surface-cream">
-      <AdminHeader fullName={profile?.full_name ?? null} role={profile?.role ?? null} notifications={<NotificationsPanel />} />
+           <AdminHeader
+        fullName={profile.full_name}
+        role={profile.role}
+        isSuperAdmin={profile.is_super_admin === true}
+        notifications={<NotificationsPanel /* your original props */ />}
+      />
       <LiveRefresh tables={['orders', 'profiles', 'books', 'repayment_requests', 'credit_repayments', 'audit_logs', 'notifications']} />
       <NotificationToasts />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-8">{children}</main>

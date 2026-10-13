@@ -32,7 +32,7 @@ export async function inviteAdmin(formData: FormData) {
 
   const { data, error } = await service.auth.admin.inviteUserByEmail(email, {
     data: { role: 'admin', full_name: fullName },
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm?type=invite`,
+    redirectTo: `${origin}/auth/confirm`
   });
   
   if (error) throw new Error(error.message);

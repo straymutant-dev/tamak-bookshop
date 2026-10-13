@@ -21,20 +21,22 @@ const ALL_LINKS = [
   { label: 'Repayments', href: '/admin/repayments' },
   { label: 'Vendors', href: '/admin/vendors', adminOnly: true },
   { label: 'Staff', href: '/admin/staff', adminOnly: true },
-  { label: 'Team', href: '/admin/team', adminOnly: true },
-  { label: 'Activity', href: '/admin/activity', adminOnly: true },
+  { label: 'Team', href: '/admin/team', adminOnly: true, superAdminOnly: true },  { label: 'Activity', href: '/admin/activity', adminOnly: true },
 { label: 'Payment details', href: '/admin/settings/payments', adminOnly: true },
 ];
 
 export default function AdminHeader({
   fullName,
   role,
+  isSuperAdmin,
   notifications,
 }: {
   fullName: string | null;
   role?: string | null;
+  isSuperAdmin?: boolean;
   notifications?: React.ReactNode;
 }) {
+
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -42,7 +44,16 @@ export default function AdminHeader({
   const [confirmingLogout, setConfirmingLogout] = useState(false);
   const navRef = useRef<HTMLDivElement>(null);
 
-  const links = ALL_LINKS.filter((link) => !link.adminOnly || role === 'admin');
+  const links = ALL_LINKS.filter((link) => {
+    if (link.superAdminOnly) {
+      return isSuperAdmin;
+    }
+    if (link.adminOnly) {
+      return role === 'admin';
+    }
+    return true;
+  });
+  
   const isActive = (href: string) => pathname === href || pathname?.startsWith(`${href}/`);
   const currentLink = links.find((link) => isActive(link.href));
 
