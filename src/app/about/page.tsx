@@ -1,5 +1,13 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
+// Path: src/app/about/page.tsx
+import type { Metadata } from 'next';
 import TeamPhoto from '@/components/store/TeamPhoto';
+
+export const metadata: Metadata = {
+  title: 'About',
+  description:
+    'Tamak Bookshop is a retail and wholesale bookshop in Kasoa, Ghana, supplying textbooks, workbooks and past-questions materials to students, parents and partner schools.',
+};
 
 export default function AboutPage() {
   return (

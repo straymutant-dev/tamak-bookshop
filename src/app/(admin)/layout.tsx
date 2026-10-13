@@ -1,4 +1,5 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
+import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
@@ -7,6 +8,11 @@ import Footer from '@/components/store/Footer';
 import LiveRefresh from '@/components/ui/LiveRefresh';
 import NotificationToasts from '@/components/notifications/NotificationToasts';
 import NotificationsPanel from '@/components/notifications/NotificationsPanel';
+
+export const metadata: Metadata = {
+  title: 'Staff portal',
+  robots: { index: false, follow: false },
+};
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const headersList = await headers();

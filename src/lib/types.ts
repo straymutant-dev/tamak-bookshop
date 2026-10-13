@@ -1,4 +1,5 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
+
 import type { Database } from '@/lib/database.types';
 
 // Levels the shop sells (the UI lists). 'Tertiary' stays in the DB enum only.

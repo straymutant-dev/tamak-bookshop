@@ -3,6 +3,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
+import { phonesMatch } from '@/lib/phone';
 
 /**
  * "I've paid — here's my transaction ID." Staff are notified, and the reference
@@ -38,12 +39,13 @@ export async function reportPayment(input: {
     const service = createServiceRoleClient();
     const { data: order } = await service
       .from('orders')
-      .select('id, payment_status, user_id')
+      .select('id, payment_status, user_id, contact_phone')
       .eq('order_number', input.orderNumber)
-      .eq('contact_phone', input.phone)
-      .single();
+      .maybeSingle();
 
-    if (!order || order.user_id !== null) throw new Error('No matching order found');
+    if (!order || order.user_id !== null || !phonesMatch(order.contact_phone, input.phone)) {
+      throw new Error('No matching order found');
+    }
     if (order.payment_status !== 'payment_pending') throw new Error('This order is not waiting for payment');
 
     const { error } = await service

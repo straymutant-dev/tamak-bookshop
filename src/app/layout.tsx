@@ -1,5 +1,5 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Fraunces } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
@@ -20,9 +20,32 @@ const fraunces = Fraunces({
   axes: ["opsz"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const siteTitle = "Tamak Bookshop — books in Kasoa, Ghana";
+const siteDescription =
+  "Books for every class level, from KG to SHS. Order online, pay by mobile money or bank transfer, and pick up in Kasoa. Wholesale accounts for schools and vendors.";
+
 export const metadata: Metadata = {
-  title: "Tamak Bookshop",
-  description: "Retail and wholesale bookstore management for Tamak Bookshop, Kasoa.",
+  metadataBase: new URL(siteUrl),
+  title: { default: siteTitle, template: "%s · Tamak Bookshop" },
+  description: siteDescription,
+  applicationName: "Tamak Bookshop",
+  openGraph: {
+    type: "website",
+    siteName: "Tamak Bookshop",
+    locale: "en_GH",
+    title: siteTitle,
+    description: siteDescription,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteTitle,
+    description: siteDescription,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#164A41",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

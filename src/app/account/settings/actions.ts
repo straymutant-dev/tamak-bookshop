@@ -1,4 +1,5 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
+// Path: src/app/account/settings/actions.ts
 'use server';
 
 import { revalidatePath } from 'next/cache';

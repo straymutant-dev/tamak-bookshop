@@ -1,7 +1,13 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
+import type { Metadata } from 'next';
 import PasswordInput from '@/components/ui/PasswordInput';
 import { adminLogin } from './actions';
 import Turnstile from '@/components/ui/Turnstile';
+
+export const metadata: Metadata = {
+  title: 'Staff login',
+  robots: { index: false, follow: false },
+};
 
 export default async function AdminLoginPage({
   searchParams,

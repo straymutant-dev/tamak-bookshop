@@ -1,10 +1,15 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { CLASS_LEVELS, type ClassLevel } from '@/lib/types';
 import BookCard from '@/components/store/BookCard';
 import ScrollReveal from '@/components/ui/ScrollReveal';
 
+export const metadata: Metadata = {
+  title: 'Books catalog',
+  description: 'Browse textbooks and storybooks by class level, subject and category. Order online and pick up in Kasoa.',
+};
 
 export default async function StorePage({
   searchParams,

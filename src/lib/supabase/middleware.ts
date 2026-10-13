@@ -53,7 +53,24 @@ function unreachableResponse() {
   );
 }
 
+// Browser / crawler files that must be served as-is on BOTH hosts. Without this the admin
+// host would rewrite /robots.txt to /admin/robots.txt (a 404), and the admin tab would have no icon.
+const METADATA_PATHS = new Set([
+  '/robots.txt',
+  '/sitemap.xml',
+  '/manifest.webmanifest',
+  '/icon',
+  '/apple-icon',
+  '/opengraph-image',
+]);
+
+function isMetadataRoute(pathname: string) {
+  return METADATA_PATHS.has(pathname) || pathname.startsWith('/pwa-icon/');
+}
+
 export async function updateSession(request: NextRequest) {
+  if (isMetadataRoute(request.nextUrl.pathname)) return NextResponse.next({ request });
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
