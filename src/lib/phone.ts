@@ -23,3 +23,9 @@ export function phonesMatch(a: string | null | undefined, b: string | null | und
   if (na && nb) return na === nb;
   return a.trim() === b.trim();
 }
+
+// Supabase needs +233XXXXXXXXX
+export function toE164(input: string): string | null {
+  const local = normalizeGhanaPhone(input);
+  return local ? `+233${local.slice(1)}` : null;
+}

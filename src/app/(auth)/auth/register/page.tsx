@@ -4,10 +4,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { registerClient, registerVendor } from './actions';
+import { registerClient, registerVendor, verifyPhoneCode } from './actions';
 import PasswordInput from '@/components/ui/PasswordInput';
 import PasswordStrengthMeter from '@/components/ui/PasswordStrengthMeter';
-import CheckEmailNotice from '@/components/ui/CheckEmailNotice';
 import Turnstile, { TURNSTILE_ENABLED } from '@/components/ui/Turnstile';
 
 export default function RegisterPage() {
@@ -17,13 +16,12 @@ export default function RegisterPage() {
   );
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
+  const [verifyPhone, setVerifyPhone] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [captchaToken, setCaptchaToken] = useState('');
   const passwordMismatch = confirmPassword.length > 0 && password !== confirmPassword;
 
   async function handleSubmit(formData: FormData) {
-    const email = String(formData.get('email') ?? '');
     const action = accountType === 'client' ? registerClient : registerVendor;
     setError(null);
     const result = await action(formData);
@@ -31,11 +29,57 @@ export default function RegisterPage() {
       setError(result.error);
       return;
     }
-    setSubmittedEmail(email);
+    if (result?.phone) setVerifyPhone(result.phone);
   }
 
-  if (submittedEmail) {
-    return <CheckEmailNotice email={submittedEmail} vendor={accountType === 'vendor'} />;
+  async function handleVerify(formData: FormData) {
+    setError(null);
+    const result = await verifyPhoneCode(formData); // redirects on success
+    if (result?.error) setError(result.error);
+  }
+
+  if (verifyPhone) {
+    return (
+      <div className="mx-auto flex w-full max-w-sm flex-col justify-center px-6 py-16">
+        <h1 className="mb-1 text-2xl font-semibold text-ink">Verify your phone</h1>
+        <p className="mb-6 text-sm text-ink-muted">
+          We sent a 6-digit code by SMS to {verifyPhone}. Enter it below.
+        </p>
+
+        {error && <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+
+        <form action={handleVerify} className="flex flex-col gap-4">
+          <input type="hidden" name="phone" value={verifyPhone} />
+          <label className="flex flex-col gap-1 text-sm">
+            Verification code
+            <input
+              name="code"
+              required
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              placeholder="123456"
+              className="rounded-md border border-brand-sage px-3 py-2 text-center text-lg tracking-widest"
+            />
+          </label>
+          <button type="submit" className="rounded-md bg-brand-green px-4 py-2 font-medium text-white">
+            Verify and continue
+          </button>
+        </form>
+
+        <button
+          type="button"
+          onClick={() => {
+            setVerifyPhone(null);
+            setError(null);
+            setCaptchaToken('');
+          }}
+          className="mt-4 text-sm text-ink-muted hover:text-brand-green"
+        >
+          Wrong number or no code? Start again
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -89,13 +133,9 @@ export default function RegisterPage() {
         )}
 
         <label className="flex flex-col gap-1 text-sm">
-          Phone
+          Phone number
           <input name="phone" type="tel" required placeholder="e.g. 024 123 4567" className="rounded-md border border-brand-sage px-3 py-2" />
-        </label>
-
-        <label className="flex flex-col gap-1 text-sm">
-          Email
-          <input name="email" type="email" required placeholder="you@example.com" className="rounded-md border border-brand-sage px-3 py-2" />
+          <span className="text-xs text-ink-muted">We&rsquo;ll text you a code to verify this number.</span>
         </label>
 
         <label className="flex flex-col gap-1 text-sm">
@@ -132,7 +172,7 @@ export default function RegisterPage() {
           disabled={passwordMismatch || confirmPassword.length === 0 || (TURNSTILE_ENABLED && !captchaToken)}
           className="mt-2 rounded-md bg-brand-green px-4 py-2 font-medium text-white disabled:opacity-50"
         >
-          {accountType === 'client' ? 'Create account' : 'Submit for approval'}
+          {accountType === 'client' ? 'Send verification code' : 'Send code and submit for approval'}
         </button>
 
         {accountType === 'vendor' && (

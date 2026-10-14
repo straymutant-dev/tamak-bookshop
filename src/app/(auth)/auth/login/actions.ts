@@ -4,6 +4,7 @@
 import { redirect } from 'next/navigation';
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { CAPTCHA_MESSAGE, captchaTokenFrom, isCaptchaError } from '@/lib/captcha';
+import { normalizeGhanaPhone, toE164 } from '@/lib/phone';
 
 const MAX_FAILED_ATTEMPTS = 6;
 const LOCKOUT_MINUTES = 15;
@@ -16,16 +17,26 @@ const DASHBOARD_BY_ROLE: Record<string, string> = {
 };
 
 export async function login(formData: FormData) {
-  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const raw = String(formData.get('identifier') ?? '').trim();
   const password = String(formData.get('password') ?? '');
   const redirectTo = String(formData.get('redirectTo') ?? '');
+
+  const isEmail = raw.includes('@');
+  const e164 = isEmail ? null : toE164(raw);
+  if (!isEmail && !e164) {
+    redirect(`/auth/login?error=${encodeURIComponent('Enter a valid phone number or email.')}`);
+  }
+
+  // One key for the lockout table, whichever way they sign in.
+  // (The column is still called "email"; phone users are stored as 0241234567.)
+  const identifier = isEmail ? raw.toLowerCase() : (normalizeGhanaPhone(raw) as string);
 
   const service = createServiceRoleClient();
 
   const { data: attempt } = await service
     .from('login_attempts')
     .select('failed_count, locked_until')
-    .eq('email', email)
+    .eq('email', identifier)
     .maybeSingle();
 
   if (attempt?.locked_until && new Date(attempt.locked_until) > new Date()) {
@@ -39,7 +50,7 @@ export async function login(formData: FormData) {
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({
-    email,
+    ...(isEmail ? { email: identifier } : { phone: e164! }),
     password,
     options: { captchaToken: captchaTokenFrom(formData) },
   });
@@ -55,25 +66,28 @@ export async function login(formData: FormData) {
       nextCount >= MAX_FAILED_ATTEMPTS ? new Date(Date.now() + LOCKOUT_MINUTES * 60000).toISOString() : null;
 
     await service.from('login_attempts').upsert({
-      email,
+      email: identifier,
       failed_count: lockedUntil ? 0 : nextCount,
       locked_until: lockedUntil,
       last_attempt_at: new Date().toISOString(),
     });
 
+    const lowerMessage = error?.message?.toLowerCase() ?? '';
     const message = lockedUntil
       ? `Too many failed attempts. Try again in ${LOCKOUT_MINUTES} minutes.`
-      : error?.message?.toLowerCase().includes('email not confirmed')
+      : lowerMessage.includes('email not confirmed')
         ? 'Please confirm your email first — check your inbox for the link we sent.'
-        : error?.message ?? 'Invalid credentials';
+        : lowerMessage.includes('phone not confirmed')
+          ? 'Please verify your phone first: register again with the same number to get a new code.'
+          : error?.message ?? 'Invalid credentials';
 
     redirect(`/auth/login?error=${encodeURIComponent(message)}`);
   }
 
-  // Successful login clears any prior failed-attempt record for this email.
-  await service.from('login_attempts').delete().eq('email', email);
+  // Successful login clears any prior failed-attempt record for this identifier.
+  await service.from('login_attempts').delete().eq('email', identifier);
 
-   const { data: profile } = await supabase
+  const { data: profile } = await supabase
     .from('profiles')
     .select('role, full_name, last_login_at')
     .eq('id', data.user!.id)
@@ -92,4 +106,5 @@ export async function login(formData: FormData) {
 
   const destination = redirectTo || DASHBOARD_BY_ROLE[profile?.role ?? 'client'] || '/store';
   const separator = destination.includes('?') ? '&' : '?';
-  redirect(`${destination}${separator}toast=${encodeURIComponent(welcomeMessage)}`);}
+  redirect(`${destination}${separator}toast=${encodeURIComponent(welcomeMessage)}`);
+}

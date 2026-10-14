@@ -1,7 +1,7 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
 'use client';
 
-import { createContext, Suspense, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, Suspense, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 
 interface Toast {
@@ -17,22 +17,23 @@ interface ToastContextValue {
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 function ToastQueryListener({ showToast }: { showToast: ToastContextValue['showToast'] }) {
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
-  const router = useRouter();
+const searchParams = useSearchParams();
+const router = useRouter();
+const pathname = usePathname();
+const shown = useRef<string | null>(null);
 
-  useEffect(() => {
-    const message = searchParams.get('toast');
-    if (!message) return;
-    showToast(message, searchParams.get('toastType') === 'error' ? 'error' : 'success');
+useEffect(() => {
+  const message = searchParams.get('toast');
+  if (!message || shown.current === message) return;
+  shown.current = message;
 
-    const next = new URLSearchParams(searchParams);
-    next.delete('toast');
-    next.delete('toastType');
-    const query = next.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  showToast(message);   // whatever your existing toast call is
+
+  const params = new URLSearchParams(searchParams.toString());
+  params.delete('toast');
+  const query = params.toString();
+  router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+}, [searchParams, router, pathname]);
 
   return null;
 }

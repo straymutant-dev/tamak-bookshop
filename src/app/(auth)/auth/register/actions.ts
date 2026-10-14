@@ -1,23 +1,34 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
 'use server';
 
+import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { CAPTCHA_MESSAGE, captchaTokenFrom, isCaptchaError } from '@/lib/captcha';
+import { normalizeGhanaPhone, toE164 } from '@/lib/phone';
 
-export async function registerClient(formData: FormData) {
-  const email = String(formData.get('email') ?? '');
+const PHONE_ERROR = 'Enter a valid Ghana phone number, e.g. 024 123 4567.';
+
+async function startRegistration(formData: FormData, role: 'client' | 'vendor') {
   const password = String(formData.get('password') ?? '');
-  const fullName = String(formData.get('fullName') ?? '');
-  const phone = String(formData.get('phone') ?? '');
+  const fullName = String(formData.get('fullName') ?? '').trim();
+  const businessName = String(formData.get('businessName') ?? '').trim();
+  const rawPhone = String(formData.get('phone') ?? '');
+
+  const e164 = toE164(rawPhone);
+  const local = normalizeGhanaPhone(rawPhone);
+  if (!e164 || !local) return { error: PHONE_ERROR };
 
   const supabase = await createClient();
 
+  // Sends the SMS code. The user is not signed in until the code is verified.
   const { data, error } = await supabase.auth.signUp({
-    email,
+    phone: e164,
     password,
     options: {
-      data: { full_name: fullName, phone, role: 'client' },
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm?type=signup`,
+      data:
+        role === 'vendor'
+          ? { full_name: fullName, phone: local, role: 'vendor', business_name: businessName }
+          : { full_name: fullName, phone: local, role: 'client' },
       captchaToken: captchaTokenFrom(formData),
     },
   });
@@ -26,37 +37,37 @@ export async function registerClient(formData: FormData) {
     return { error: isCaptchaError(error?.message) ? CAPTCHA_MESSAGE : (error?.message ?? 'Registration failed') };
   }
 
-  return { success: true };
+  return { success: true, phone: e164 };
+}
+
+export async function registerClient(formData: FormData) {
+  return startRegistration(formData, 'client');
 }
 
 export async function registerVendor(formData: FormData) {
-  const email = String(formData.get('email') ?? '');
-  const password = String(formData.get('password') ?? '');
-  const fullName = String(formData.get('fullName') ?? '');
+  return startRegistration(formData, 'vendor');
+}
+
+export async function verifyPhoneCode(formData: FormData) {
   const phone = String(formData.get('phone') ?? '');
-  const businessName = String(formData.get('businessName') ?? '');
+  const code = String(formData.get('code') ?? '').replace(/\D/g, '');
+  if (code.length !== 6) return { error: 'Enter the 6-digit code.' };
 
   const supabase = await createClient();
-
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        full_name: fullName,
-        phone,
-        role: 'vendor',
-        business_name: businessName,
-        vendor_status: 'pending',
-      },
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm?type=signup`,
-      captchaToken: captchaTokenFrom(formData),
-    },
-  });
+  const { data, error } = await supabase.auth.verifyOtp({ phone, token: code, type: 'sms' });
 
   if (error || !data.user) {
-    return { error: isCaptchaError(error?.message) ? CAPTCHA_MESSAGE : (error?.message ?? 'Registration failed') };
+    return { error: 'That code is incorrect or has expired.' };
   }
 
-  return { success: true };
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, full_name')
+    .eq('id', data.user.id)
+    .single();
+
+  await supabase.from('profiles').update({ last_login_at: new Date().toISOString() }).eq('id', data.user.id);
+
+  const destination = profile?.role === 'vendor' ? '/vendor/dashboard' : '/account/dashboard';
+  redirect(`${destination}?toast=${encodeURIComponent(`Welcome, ${profile?.full_name ?? 'there'}!`)}`);
 }

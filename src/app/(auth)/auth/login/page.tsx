@@ -30,8 +30,15 @@ export default async function LoginPage({
         <input type="hidden" name="redirectTo" value={params.redirectTo ?? ''} />
 
         <label className="flex flex-col gap-1 text-sm">
-          Email
-          <input type="email" name="email" placeholder='john.doe@example.com' required className="rounded-md border border-brand-sage px-3 py-2" />
+          Phone number or email
+          <input
+            type="text"
+            name="identifier"
+            placeholder="024 123 4567 or you@example.com"
+            required
+            autoComplete="username"
+            className="rounded-md border border-brand-sage px-3 py-2"
+          />
         </label>
 
         <label className="flex flex-col gap-1 text-sm">
