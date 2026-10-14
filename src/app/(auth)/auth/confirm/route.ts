@@ -7,8 +7,14 @@ export async function GET(request: Request) {
   const tokenHash = searchParams.get('token_hash');
   const type = searchParams.get('type');
 
+  // failures for invite links go to the invite page, not the customer login
+  const failTo = (message: string) =>
+    type === 'invite'
+      ? NextResponse.redirect(`${origin}/invite-expired`)
+      : NextResponse.redirect(`${origin}/auth/login?error=${encodeURIComponent(message)}`);
+
   if (!tokenHash || (type !== 'invite' && type !== 'signup' && type !== 'recovery')) {
-    return NextResponse.redirect(`${origin}/auth/login?error=Invalid or expired confirmation link`);
+    return failTo('Invalid or expired confirmation link');
   }
 
   const supabase = await createClient();
@@ -18,11 +24,15 @@ export async function GET(request: Request) {
   });
 
   if (error || !data.user) {
-    return NextResponse.redirect(`${origin}/auth/login?error=${encodeURIComponent(error?.message ?? 'Confirmation failed')}`);
+    return failTo(error?.message ?? 'Confirmation failed');
   }
 
-  if (type === 'invite' || type === 'recovery') {
-    return NextResponse.redirect(`${origin}/auth/set-password${type === 'recovery' ? '?mode=reset' : ''}`);
+  if (type === 'invite') {
+    return NextResponse.redirect(`${origin}/accept-invite`);
+  }
+
+  if (type === 'recovery') {
+    return NextResponse.redirect(`${origin}/auth/set-password?mode=reset`);
   }
 
   // type === 'signup': client or vendor confirming their own email.

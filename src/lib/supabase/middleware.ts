@@ -63,6 +63,13 @@ function isMetadataRoute(pathname: string) {
   return METADATA_PATHS.has(pathname);
 }
 
+// Invite pages live outside /admin but are opened on the admin host
+const ADMIN_HOST_PASSTHROUGH = ['/auth/confirm', '/accept-invite', '/invite-expired'];
+
+function isAdminHostPassthrough(pathname: string) {
+  return ADMIN_HOST_PASSTHROUGH.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
 export async function updateSession(request: NextRequest) {
   if (isMetadataRoute(request.nextUrl.pathname)) return NextResponse.next({ request });
 
@@ -135,6 +142,7 @@ export async function updateSession(request: NextRequest) {
     else if (originalPath === '/') effectivePath = '/admin/inventory';
     else if (originalPath.startsWith('/admin')) effectivePath = originalPath;
     else if (originalPath.startsWith('/account') || originalPath.startsWith('/api') || originalPath.startsWith('/about')) effectivePath = originalPath; // shared routes — serve as-is, no admin prefix
+    else if (isAdminHostPassthrough(originalPath)) effectivePath = originalPath; // invite flow: serve as-is
     else effectivePath = `/admin${originalPath}`;
   }
 

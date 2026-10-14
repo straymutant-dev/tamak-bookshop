@@ -31,12 +31,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, full_name, is_super_admin')
+    .select('role, full_name, is_super_admin, invite_accepted_at')
     .eq('id', user.id)
     .single();
 
-  // Not staff/admin: send them to the customer site, not "/" on this host.
   if (profile?.role !== 'admin' && profile?.role !== 'staff') redirect(crossHostBase);
+
+  // invited but never set a password: send them back to finish
+  if (!profile.invite_accepted_at) redirect('/accept-invite');
 
   return (
     <div className="flex min-h-screen flex-col bg-surface-cream">
