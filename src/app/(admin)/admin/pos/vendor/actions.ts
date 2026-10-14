@@ -53,9 +53,11 @@ export async function submitVendorPosSale(formData: FormData): Promise<SaleResul
 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc('pos_vendor_sale', {
-    p_vendor_id: vendorId,
-    p_walkin_name: walkinName,
-    p_walkin_phone: walkinPhone,
+    // Null is intentional: registered vendors have no walk-in details,
+    // walk-in sales have no vendor id. The SQL function handles both.
+    p_vendor_id: vendorId as string,
+    p_walkin_name: walkinName as string,
+    p_walkin_phone: walkinPhone as string,
     p_items: items.map((i) => ({ bookId: i.bookId, quantity: i.quantity })),
     p_method: method,
     p_reference: reference || undefined,
