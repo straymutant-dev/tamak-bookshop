@@ -46,7 +46,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         fullName={profile.full_name}
         role={profile.role}
         isSuperAdmin={profile.is_super_admin === true}
-        notifications={<NotificationsPanel /* your original props */ />}
+        notifications={<NotificationsPanel/>}
       />
       <LiveRefresh tables={['orders', 'profiles', 'books', 'repayment_requests', 'credit_repayments', 'audit_logs', 'notifications']} />
       <NotificationToasts />

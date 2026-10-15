@@ -1,5 +1,4 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
-
 /**
  * Validates a Ghana phone number and returns it in local 10-digit form
  * (0241234567), or null if it isn't valid.

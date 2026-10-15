@@ -3,6 +3,13 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
+import { headers } from 'next/headers';
+
+async function currentOrigin() {
+  const host = (await headers()).get('host') ?? '';
+  const protocol = host.includes('localhost') ? 'http' : 'https';
+  return `${protocol}://${host}`;
+}
 
 async function assertSuperAdmin() {
   const supabase = await createClient();
@@ -32,7 +39,7 @@ export async function inviteAdmin(formData: FormData) {
 
   const { data, error } = await service.auth.admin.inviteUserByEmail(email, {
     data: { role: 'admin', full_name: fullName },
-    redirectTo: `${origin}/auth/confirm`
+    redirectTo: `${await currentOrigin()}/auth/confirm`
   });
   
   if (error) throw new Error(error.message);

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import PasswordInput from '@/components/ui/PasswordInput';
 import PasswordStrengthMeter from '@/components/ui/PasswordStrengthMeter';
+import { normalizeGhanaPhone } from '@/lib/phone';
 
 const DASHBOARD_BY_ROLE: Record<string, string> = {
   admin: '/admin/dashboard',
@@ -36,7 +37,9 @@ export default function SetPasswordPage() {
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
-      setEmail(data.user?.email ?? null);
+      // Phone accounts have no email: show the phone number instead.
+      const phone = data.user?.phone ? (normalizeGhanaPhone(data.user.phone) ?? data.user.phone) : null;
+      setEmail(data.user?.email || phone || null);
       setFullName((data.user?.user_metadata?.full_name as string) ?? null);
     });
   }, []);
