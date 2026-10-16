@@ -7,7 +7,19 @@ import { updateProfile } from './actions';
 import { useToast } from '@/components/ui/ToastContext';
 import Turnstile, { TURNSTILE_ENABLED } from '@/components/ui/Turnstile';
 
-export default function ProfileForm({ fullName, phone }: { fullName: string; phone: string }) {
+export default function ProfileForm({
+  fullName,
+  phone,
+  phoneLocked = false,
+  contactEmail = '',
+}: {
+  fullName: string;
+  phone: string;
+  // Where receipts are emailed (phone accounts only; email accounts use their account email).
+  contactEmail?: string;
+  // Phone accounts log in with this number, so it can't be edited here.
+  phoneLocked?: boolean;
+}) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -40,8 +52,29 @@ export default function ProfileForm({ fullName, phone }: { fullName: string; pho
 
       <label className="flex flex-col gap-1 text-sm">
         Phone
-        <input name="phone" type="tel" defaultValue={phone} className="rounded-md border border-brand-sage px-3 py-2" />
+        <input
+          name="phone"
+          type="tel"
+          defaultValue={phone}
+          readOnly={phoneLocked}
+          className={`rounded-md border border-brand-sage px-3 py-2 ${phoneLocked ? 'bg-surface-cream text-ink-muted' : ''}`}
+        />
+        {phoneLocked && <span className="text-xs text-ink-muted">This is your login number, so it can&rsquo;t be changed here.</span>}
       </label>
+
+      {phoneLocked && (
+        <label className="flex flex-col gap-1 text-sm">
+          Email for receipts <span className="text-xs text-ink-muted">(optional)</span>
+          <input
+            name="contactEmail"
+            type="email"
+            defaultValue={contactEmail}
+            placeholder="you@example.com"
+            className="rounded-md border border-brand-sage px-3 py-2"
+          />
+          <span className="text-xs text-ink-muted">We email your receipt when you order and when your payment is confirmed.</span>
+        </label>
+      )}
 
       <label className="flex flex-col gap-1 text-sm">
         Current password

@@ -1,8 +1,10 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
-// Path: src/app/(storefront)/store/cart/actions.ts
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { parseEmail } from '@/lib/email';
+import { after } from 'next/server';
+import { sendOrderEmail } from '@/lib/orderEmail';
 
 interface CheckoutItem {
   bookId: string;
@@ -18,12 +20,14 @@ export async function submitOrder(formData: FormData) {
 
   let contactName = String(formData.get('contactName') ?? '').trim();
   let contactPhone = String(formData.get('contactPhone') ?? '').trim();
+  // Optional: where the receipt is emailed. Throws a friendly error if it is not an email address.
+  let contactEmail = parseEmail(formData.get('contactEmail'));
 
   // Signed-in customers order under the name on their account, not whatever was typed.
   if (user) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role, full_name, phone')
+      .select('role, full_name, phone, contact_email')
       .eq('id', user.id)
       .single();
 
@@ -32,6 +36,7 @@ export async function submitOrder(formData: FormData) {
     }
     if (profile?.full_name) contactName = profile.full_name;
     if (!contactPhone && profile?.phone) contactPhone = profile.phone;
+    if (!contactEmail) contactEmail = profile?.contact_email || user.email || null;
   }
   const paymentMethod = (['cash', 'mobile_money', 'bank_transfer'] as const).find(
     (m) => m === formData.get('paymentMethod'),
@@ -109,6 +114,7 @@ export async function submitOrder(formData: FormData) {
       user_id: user?.id ?? null,
       contact_name: contactName,
       contact_phone: contactPhone,
+      contact_email: contactEmail,
       payment_method: paymentMethod,
       payment_reference: paymentReference,
       // Not "paid" until staff confirm the money arrived (see confirm_vendor_order_payment).
@@ -131,6 +137,9 @@ export async function submitOrder(formData: FormData) {
   if (itemsError) throw new Error(itemsError.message);
 
   // Stock is NOT deducted here: it comes out when staff confirm the payment.
+
+  // "We received your order" email (sent in the background after the response; skipped if there is no email).
+  after(() => sendOrderEmail(order.id, 'placed'));
 
   return { orderId: order.id, orderNumber: order.order_number, totalPesewas };
 }

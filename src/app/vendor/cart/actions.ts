@@ -1,9 +1,10 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
-
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
 import { normalizeGhanaPhone } from '@/lib/phone';
+import { after } from 'next/server';
+import { sendOrderEmail } from '@/lib/orderEmail';
 
 // Pickup or delivery from the checkout form. Delivery needs an exact location;
 // notes for the rider are optional. Pickup stores no address.
@@ -144,6 +145,9 @@ export async function submitVendorOrder(formData: FormData) {
   // this order sits as credit_pending until staff/admin approves it via
   // /admin/approvals.
 
+  // "We received your order" email to the account's receipt email (never blocks the order).
+  after(() => sendOrderEmail(order.id, 'placed'));
+
   return { orderId: order.id, orderNumber: order.order_number, totalPesewas: subtotalPesewas };
 }
 
@@ -245,6 +249,9 @@ export async function submitVendorOrderImmediatePayment(formData: FormData) {
   if (!profile.phone) await supabase.from('profiles').update({ phone }).eq('id', user.id);
 
   // Stock is NOT deducted here. It comes out when staff confirm the payment.
+
+  // "We received your order" email to the account's receipt email (never blocks the order).
+  after(() => sendOrderEmail(order.id, 'placed'));
 
   return { orderId: order.id, orderNumber: order.order_number, totalPesewas: subtotalPesewas };
 }

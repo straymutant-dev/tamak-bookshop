@@ -12,11 +12,12 @@ export default async function CartPage() {
 
   let signedInName: string | null = null;
   let signedInPhone: string | null = null;
+  let signedInEmail: string | null = null;
 
   if (user) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role, full_name, phone')
+      .select('role, full_name, phone, contact_email')
       .eq('id', user.id)
       .single();
 
@@ -25,6 +26,7 @@ export default async function CartPage() {
 
     signedInName = profile?.full_name ?? null;
     signedInPhone = profile?.phone ?? null;
+    signedInEmail = profile?.contact_email || user.email || null;
   }
 
   const paymentAccounts = await fetchPaymentAccounts(supabase);
@@ -33,6 +35,7 @@ export default async function CartPage() {
     <ClientCartPage
       signedInName={signedInName}
       signedInPhone={signedInPhone}
+      signedInEmail={signedInEmail}
       signedIn={Boolean(user)}
       paymentAccounts={paymentAccounts}
     />

@@ -1,4 +1,5 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
+// Path: src/app/(storefront)/store/cart/ClientCartPage.tsx
 'use client';
 
 import { useState, useTransition } from 'react';
@@ -29,11 +30,13 @@ interface PlacedOrder {
 export default function ClientCartPage({
   signedInName,
   signedInPhone,
+  signedInEmail,
   signedIn,
   paymentAccounts,
 }: {
   signedInName: string | null;
   signedInPhone: string | null;
+  signedInEmail: string | null;
   signedIn: boolean;
   paymentAccounts: PaymentAccount[];
 }) {
@@ -202,6 +205,17 @@ export default function ClientCartPage({
               {fulfillment === 'delivery' && (
                 <span className="text-xs text-ink-muted">We&rsquo;ll call this number if the rider can&rsquo;t find you.</span>
               )}
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              Email for your receipt <span className="text-xs text-ink-muted">(optional)</span>
+              <input
+                name="contactEmail"
+                type="email"
+                defaultValue={signedInEmail ?? ''}
+                placeholder="you@example.com"
+                className="rounded-md border border-brand-sage px-3 py-2"
+              />
+              <span className="text-xs text-ink-muted">We email you a receipt when your order is placed and again when payment is confirmed.</span>
             </label>
 
             <div className="flex flex-col gap-1 text-sm">

@@ -3,6 +3,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { after } from 'next/server';
+import { sendOrderEmail } from '@/lib/orderEmail';
 
 type Fulfillment = 'pickup' | 'delivery';
 type ReceivedMethod = 'cash' | 'mobile_money' | 'bank_transfer' | 'cheque';
@@ -29,6 +31,7 @@ export async function approveCreditOrder(orderId: string, fulfillment: Fulfillme
     p_fulfillment: fulfillment,
   });
   if (error) throw new Error(error.message);
+  after(() => sendOrderEmail(orderId, 'credit_approved'));
   refresh();
 }
 
@@ -50,6 +53,8 @@ export async function confirmOrderPayment(
     p_cheque_cleared: chequeCleared,
   });
   if (error) throw new Error(error.message);
+  // Payment approved: email the receipt.
+  after(() => sendOrderEmail(orderId, 'paid'));
   refresh();
 }
 

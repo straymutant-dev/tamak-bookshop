@@ -18,7 +18,7 @@ export default async function AccountSettingsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, phone, role, credit_limit_pesewas, outstanding_balance_pesewas')
+    .select('full_name, phone, contact_email, role, credit_limit_pesewas, outstanding_balance_pesewas')
     .eq('id', user.id)
     .single();
 
@@ -34,14 +34,14 @@ export default async function AccountSettingsPage() {
             <h2 className="mb-4 text-sm font-medium text-ink-muted">Profile</h2>
 
             <div className="mb-4 flex flex-col gap-1 text-sm">
-              <span className="text-ink">Email</span>
+              <span className="text-ink">{user.email ? 'Email' : 'Phone'}</span>
               <div className="flex items-center justify-between rounded-md border border-border-beige bg-surface-cream px-3 py-2">
-                <span className="text-ink-muted">{user.email}</span>
+                <span className="text-ink-muted">{user.email ?? profile?.phone ?? user.phone}</span>
                 <span className="text-xs text-ink-muted">Verified — cannot be changed here</span>
               </div>
             </div>
 
-            <ProfileForm fullName={profile?.full_name ?? ''} phone={profile?.phone ?? ''} />
+            <ProfileForm fullName={profile?.full_name ?? ''} phone={profile?.phone ?? ''} phoneLocked={!user.email} contactEmail={profile?.contact_email ?? ''} />
           </section>
 
           <section className="rounded-md border border-border-beige bg-surface-card p-6 sm:col-span-2">
