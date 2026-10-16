@@ -175,6 +175,21 @@ export default function BookFormModal({
           )}
 
           <label className="flex flex-col gap-1 text-sm">
+            Low-stock alert at
+            <input
+              name="low_stock_threshold"
+              type="number"
+              min="0"
+              step="1"
+              defaultValue={book?.low_stock_threshold ?? 5}
+              className="rounded-md border border-brand-sage px-3 py-2"
+            />
+            <span className="text-xs text-ink-muted">
+              Flag this book when stock falls to this number or below.
+            </span>
+          </label>         
+
+          <label className="flex flex-col gap-1 text-sm">
             Cover image
             <input
               name="cover"

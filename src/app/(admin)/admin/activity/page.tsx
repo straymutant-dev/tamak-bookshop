@@ -1,5 +1,6 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
 import { createClient } from '@/lib/supabase/server';
+import { formatGHS } from '@/lib/currency';
 
 const ACTION_LABELS: Record<string, string> = {
   vendor_credit_limit_set: 'Set vendor credit limit',
@@ -15,10 +16,56 @@ const ACTION_LABELS: Record<string, string> = {
   vendor_order_approved: 'Approved vendor order',
   vendor_order_rejected: 'Rejected vendor credit order',
   vendor_repayment_recorded: 'Recorded vendor repayment',
+  book_created: 'Added book',
+  book_updated: 'Edited book',
+  book_archived: 'Archived book',
+  book_restored: 'Restored book',
 };
 
 function labelFor(action: string) {
   return ACTION_LABELS[action] ?? action.replace(/_/g, ' ');
+}
+
+const FIELD_LABELS: Record<string, string> = {
+  title: 'Title',
+  author: 'Author',
+  category: 'Category',
+  subject: 'Subject',
+  class_level: 'Level',
+  academic_year: 'Academic year',
+  buying_cost_pesewas: 'Buying cost',
+  customer_price_pesewas: 'Retail price',
+  vendor_price_pesewas: 'Wholesale price',
+  low_stock_threshold: 'Low-stock alert',
+  cover_image: 'Cover',
+};
+
+function formatValue(field: string, value: unknown) {
+  if (value === null || value === undefined || value === '') return '—';
+  if (field.endsWith('_pesewas') && typeof value === 'number') return formatGHS(value);
+  return String(value);
+}
+
+function detailLines(details: unknown): string[] {
+  if (!details || typeof details !== 'object') return [];
+  const d = details as Record<string, unknown>;
+  const lines: string[] = [];
+  if (typeof d.title === 'string') lines.push(d.title);
+  if (typeof d.quantity === 'number') lines.push(`Quantity: ${d.quantity}`);
+  if (typeof d.note === 'string' && d.note) lines.push(`Note: ${d.note}`);
+  if (typeof d.reason === 'string' && d.reason) lines.push(`Reason: ${d.reason}`);
+  if (d.changes && typeof d.changes === 'object') {
+    for (const [field, change] of Object.entries(d.changes as Record<string, unknown>)) {
+      const label = FIELD_LABELS[field] ?? field;
+      if (change && typeof change === 'object') {
+        const { from, to } = change as { from?: unknown; to?: unknown };
+        lines.push(`${label}: ${formatValue(field, from)} → ${formatValue(field, to)}`);
+      } else {
+        lines.push(`${label}: ${String(change)}`);
+      }
+    }
+  }
+  return lines;
 }
 
 export default async function ActivityPage({
@@ -103,6 +150,11 @@ export default async function ActivityPage({
             <p className="mt-1 text-xs text-ink-muted">
               {log.staff_id ? namesById[log.staff_id] ?? 'Unknown' : 'System'} · {log.entity_type}
             </p>
+            {detailLines(log.details_json).map((line, i) => (
+              <p key={i} className="mt-1 text-xs text-ink">
+                {line}
+              </p>
+            ))}
           </div>
         ))}
         {(logs ?? []).length === 0 && !error && (

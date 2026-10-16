@@ -168,7 +168,7 @@ export default function InventoryTable({
                 <td className="px-4 py-3">
                   <span
                     className={
-                      book.stock_quantity <= 5
+                      book.stock_quantity <= book.low_stock_threshold
                         ? 'font-medium text-accent-terracotta'
                         : 'text-ink'
                     }

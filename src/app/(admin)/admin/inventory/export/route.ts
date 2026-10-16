@@ -7,9 +7,6 @@ import { CLASS_LEVELS } from '@/lib/types';
 type BookRow = Database['public']['Tables']['books']['Row'];
 export const runtime = 'nodejs';
 
-// Same store-wide "low stock" rule as InventoryTable.
-const LOW_STOCK_THRESHOLD = 5;
-
 // Same shop details as the sales receipt (pos/Receipt.tsx).
 const SHOP = {
   name: 'TAMAK PUBLICATIONS AND CONSULTING SERVICES',
@@ -100,7 +97,7 @@ export async function GET(request: Request) {
   });
 
   const outCount = rows.filter((b) => b.stock_quantity <= 0).length;
-  const lowCount = rows.filter((b) => b.stock_quantity > 0 && b.stock_quantity <= LOW_STOCK_THRESHOLD).length;
+  const lowCount = rows.filter((b) => b.stock_quantity > 0 && b.stock_quantity <= b.low_stock_threshold).length;
   const totalUnits = rows.reduce((sum, b) => sum + Math.max(0, b.stock_quantity), 0);
 
   const filterText = [
@@ -251,7 +248,7 @@ export async function GET(request: Request) {
     ['Report date', generatedAt],
     ['Prepared by', profile.full_name ?? user.email ?? 'Staff'],
     ['Showing', filterText],
-    ['Low-stock rule', `${LOW_STOCK_THRESHOLD} units or fewer`],
+    ['Low-stock rule', 'Per-book threshold (default 5)'],
   ];
   const metaRowH = 17;
   const metaH = metaRows.length * metaRowH + 8;
@@ -335,7 +332,7 @@ export async function GET(request: Request) {
 
     const qty = book.stock_quantity;
     const isOut = qty <= 0;
-    const isLow = !isOut && qty <= LOW_STOCK_THRESHOLD;
+    const isLow = !isOut && qty <= book.low_stock_threshold;
     if (isOut || isLow) {
       page.drawRectangle({ x: MARGIN, y: y - rowH, width: CONTENT_W, height: rowH, color: isOut ? C.outTint : C.lowTint });
     }

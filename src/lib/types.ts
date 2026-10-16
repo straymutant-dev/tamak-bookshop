@@ -34,6 +34,7 @@ export interface Book {
   vendor_price_pesewas: number;
   stock_quantity: number;
   damaged_quantity: number;
+  low_stock_threshold: number;
   is_active: boolean;
   cover_image_url: string | null;
   created_at: string;

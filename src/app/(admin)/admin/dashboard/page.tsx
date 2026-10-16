@@ -5,8 +5,6 @@ import { formatGHS } from '@/lib/currency';
 import StatRow, { type Stat } from '@/components/admin/StatRow';
 import OrderNumberButton from '@/components/orders/OrderNumberButton';
 
-const LOW_STOCK_THRESHOLD = 5;
-
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
   const {
@@ -24,14 +22,10 @@ export default async function AdminDashboardPage() {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
-  const [{ count: activeBooksCount }, { count: lowStockCount }, { data: todaysOrders }, { count: pendingVendorCount }, { data: recentOrders }] =
+  const [{ count: activeBooksCount }, { data: lowStockCount }, { data: todaysOrders }, { count: pendingVendorCount }, { data: recentOrders }] =
     await Promise.all([
       supabase.from('books').select('id', { count: 'exact', head: true }).eq('is_active', true),
-      supabase
-        .from('books')
-        .select('id', { count: 'exact', head: true })
-        .eq('is_active', true)
-        .lte('stock_quantity', LOW_STOCK_THRESHOLD),
+      supabase.rpc('low_stock_count'),
       supabase.from('orders').select('total_pesewas').gte('created_at', todayStart.toISOString()),
       isAdmin
         ? supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'vendor').eq('vendor_status', 'pending')

@@ -7,6 +7,31 @@ import { ghsToPesewas } from '@/lib/currency';
 import { CLASS_LEVELS, type ClassLevel } from '@/lib/types';
 import type { Json } from '@/lib/database.types';
 
+// Fields whose changes are written to the audit trail when a book is edited.
+const AUDITED_FIELDS = [
+  'title',
+  'author',
+  'category',
+  'subject',
+  'class_level',
+  'academic_year',
+  'buying_cost_pesewas',
+  'customer_price_pesewas',
+  'vendor_price_pesewas',
+  'low_stock_threshold',
+] as const;
+
+function diffBook(before: Record<string, unknown>, after: Record<string, unknown>) {
+  const changes: Record<string, Json> = {};
+  for (const key of AUDITED_FIELDS) {
+    if (after[key] === undefined) continue; // not submitted, so left unchanged
+    if (before[key] !== after[key]) {
+      changes[key] = { from: (before[key] ?? null) as Json, to: (after[key] ?? null) as Json };
+    }
+  }
+  return changes;
+}
+
 function isClassLevel(value: string): value is ClassLevel {
   return (CLASS_LEVELS as readonly string[]).includes(value);
 }
@@ -48,6 +73,8 @@ async function uploadCoverIfProvided(bookId: string, file: File | null) {
 
 function readBookFields(formData: FormData) {
   const rawClassLevel = String(formData.get('class_level') ?? '').trim();
+  const rawThreshold = String(formData.get('low_stock_threshold') ?? '').trim();
+  const parsedThreshold = rawThreshold === '' ? NaN : Math.floor(Number(rawThreshold));
 
   return {
     // title, author, category are NOT NULL in the books table (see
@@ -70,6 +97,8 @@ function readBookFields(formData: FormData) {
     // tampered value falls back to "leave unset" rather than being sent raw.
     class_level: rawClassLevel && isClassLevel(rawClassLevel) ? rawClassLevel : undefined,
     academic_year: String(formData.get('academic_year') ?? '').trim() || undefined,
+    // undefined = let the DB default (5) apply on insert, or leave unchanged on update
+    low_stock_threshold: Number.isFinite(parsedThreshold) && parsedThreshold >= 0 ? parsedThreshold : undefined,
     buying_cost_pesewas: ghsToPesewas(Number(formData.get('buying_cost') ?? 0)),
     customer_price_pesewas: ghsToPesewas(Number(formData.get('customer_price') ?? 0)),
     vendor_price_pesewas: ghsToPesewas(Number(formData.get('vendor_price') ?? 0)),
@@ -121,6 +150,12 @@ export async function createBook(formData: FormData) {
     if (coverError) throw new Error(`Book saved, but cover failed to attach: ${coverError.message}`);
   }
 
+  await logAudit('book_created', book.id, {
+    title: fields.title,
+    stock_quantity: stockQuantity,
+    customer_price_pesewas: fields.customer_price_pesewas,
+  });
+
   revalidatePath('/admin/inventory');
 }
 
@@ -129,6 +164,8 @@ export async function updateBook(bookId: string, formData: FormData) {
   const supabase = await createClient();
   const fields = readBookFields(formData);
   assertRequiredBookFields(fields);
+
+  const { data: before } = await supabase.from('books').select('*').eq('id', bookId).single();
 
   const coverFile = formData.get('cover') as File | null;
   const coverUrl = await uploadCoverIfProvided(bookId, coverFile);
@@ -140,22 +177,32 @@ export async function updateBook(bookId: string, formData: FormData) {
 
   if (error) throw new Error(error.message);
 
+  const changes = before ? diffBook(before, fields) : {};
+  if (coverUrl) changes.cover_image = 'replaced';
+  if (Object.keys(changes).length > 0) {
+    await logAudit('book_updated', bookId, { title: fields.title, changes });
+  }
+
   revalidatePath('/admin/inventory');
 }
 
 export async function deleteBook(bookId: string) {
   await assertAdmin();
   const supabase = await createClient();
+  const { data: book } = await supabase.from('books').select('title').eq('id', bookId).single();
   const { error } = await supabase.from('books').update({ is_active: false }).eq('id', bookId);
   if (error) throw new Error(error.message);
+  await logAudit('book_archived', bookId, { title: book?.title ?? null });
   revalidatePath('/admin/inventory');
 }
 
 export async function restoreBook(bookId: string) {
   await assertAdmin();
   const supabase = await createClient();
+  const { data: book } = await supabase.from('books').select('title').eq('id', bookId).single();
   const { error } = await supabase.from('books').update({ is_active: true }).eq('id', bookId);
   if (error) throw new Error(error.message);
+  await logAudit('book_restored', bookId, { title: book?.title ?? null });
   revalidatePath('/admin/inventory');
 }
 
@@ -187,7 +234,7 @@ export async function intakeStock(formData: FormData) {
   const supabase = await createClient();
   const { data: book, error: fetchError } = await supabase
     .from('books')
-    .select('stock_quantity')
+    .select('stock_quantity, title')
     .eq('id', bookId)
     .single();
 
@@ -200,7 +247,7 @@ export async function intakeStock(formData: FormData) {
 
   if (error) throw new Error(error.message);
 
-  await logAudit('stock_intake', bookId, { quantity, note });
+  await logAudit('stock_intake', bookId, { title: book.title, quantity, note });
   revalidatePath('/admin/inventory');
 }
 
@@ -216,7 +263,7 @@ export async function writeOffStock(formData: FormData) {
   const supabase = await createClient();
   const { data: book, error: fetchError } = await supabase
     .from('books')
-    .select('stock_quantity, damaged_quantity')
+    .select('stock_quantity, damaged_quantity, title')
     .eq('id', bookId)
     .single();
 
@@ -233,6 +280,6 @@ export async function writeOffStock(formData: FormData) {
 
   if (error) throw new Error(error.message);
 
-  await logAudit('stock_writeoff', bookId, { quantity, reason });
+  await logAudit('stock_writeoff', bookId, { title: book.title, quantity, reason });
   revalidatePath('/admin/inventory');
 }
