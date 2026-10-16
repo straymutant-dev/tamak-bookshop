@@ -4,6 +4,8 @@
 import { useState } from 'react';
 import { formatGHS } from '@/lib/currency';
 import OrderManageModal from './OrderManageModal';
+import ReturnModal from './ReturnModal';
+import { canReturnOrder } from '@/lib/returns';
 import ReprintButton from './ReprintButton';
 import OrderNumberButton from '@/components/orders/OrderNumberButton';
 
@@ -42,6 +44,7 @@ export default function OrdersTable({
   namesById: Record<string, string>;
 }) {
   const [managingOrder, setManagingOrder] = useState<OrderRow | null>(null);
+  const [returningOrder, setReturningOrder] = useState<OrderRow | null>(null);
 
   return (
     <>
@@ -88,6 +91,14 @@ export default function OrdersTable({
                 <td className="px-4 py-3 text-right">
                   <div className="flex justify-end gap-3">
                     <ReprintButton orderId={order.id} />
+                    {canReturnOrder(order) && (
+                      <button
+                        onClick={() => setReturningOrder(order)}
+                        className="text-sm font-medium text-accent-terracotta hover:underline"
+                      >
+                        Return
+                      </button>
+                    )}
                     <button
                       onClick={() => setManagingOrder(order)}
                       className="text-sm font-medium text-brand-green hover:underline"
@@ -110,6 +121,7 @@ export default function OrdersTable({
       </div>
 
       {managingOrder && <OrderManageModal order={managingOrder} onClose={() => setManagingOrder(null)} />}
+      {returningOrder && <ReturnModal order={returningOrder} onClose={() => setReturningOrder(null)} />}
     </>
   );
 }

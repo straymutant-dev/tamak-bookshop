@@ -23,6 +23,13 @@ export default async function WalkinCreditPanel() {
     const phone = row.contact_phone;
     if (!phone) continue;
 
+    // What is still owed on this order after any returns taken off the debt.
+    // `credit_returned_pesewas` is not available on the `orders` table in this schema,
+    // so fall back to the raw total when that field is absent.
+    const returnedCredit = Number((row as any).credit_returned_pesewas ?? 0);
+    const owed = row.total_pesewas - returnedCredit;
+    if (row.payment_status === 'credit_approved' && owed <= 0) continue;
+
     let customer = byPhone.get(phone);
     if (!customer) {
       customer = { name: row.contact_name ?? 'Walk-in vendor', phone, owedPesewas: 0, openOrders: [], pendingCheques: [], clearedCheques: [] };
@@ -30,16 +37,16 @@ export default async function WalkinCreditPanel() {
     }
 
     if (row.payment_status === 'credit_approved') {
-      customer.owedPesewas += row.total_pesewas;
+      customer.owedPesewas += owed;
       if (row.cheque_number) {
         const existing = customer.pendingCheques.find((c) => c.number === row.cheque_number);
         if (existing) {
-          existing.totalPesewas += row.total_pesewas;
+          existing.totalPesewas += owed;
           existing.orderNumbers.push(row.order_number);
         } else {
           customer.pendingCheques.push({
             number: row.cheque_number,
-            totalPesewas: row.total_pesewas,
+            totalPesewas: owed,
             orderNumbers: [row.order_number],
           });
         }
@@ -48,7 +55,7 @@ export default async function WalkinCreditPanel() {
           id: row.id,
           orderNumber: row.order_number,
           createdAt: row.created_at,
-          totalPesewas: row.total_pesewas,
+          totalPesewas: owed,
         });
       }
     } else if (row.cheque_number) {
