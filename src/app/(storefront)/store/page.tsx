@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { CLASS_LEVELS, type ClassLevel } from '@/lib/types';
 import BookCard from '@/components/store/BookCard';
+import BookSearchBox from '@/components/store/BookSearchBox';
 import ScrollReveal from '@/components/ui/ScrollReveal';
 
 export const metadata: Metadata = {
@@ -45,19 +46,9 @@ export default async function StorePage({
     <div className="mx-auto max-w-6xl px-6 py-10">
       <h1 className="mb-6 font-serif text-3xl text-ink">Books catalog</h1>
 
-      <form method="GET" className="mb-4 flex overflow-hidden rounded-md border border-brand-sage bg-surface-card">
-        <input
-          name="search"
-          type="text"
-          defaultValue={params.search ?? ''}
-          placeholder="Search by title"
-          className="w-full px-4 py-2.5 text-sm text-ink outline-none placeholder:text-ink-muted"
-        />
-        {params.class_level && <input type="hidden" name="class_level" value={params.class_level} />}
-        <button type="submit" className="bg-brand-green px-5 text-sm font-medium text-white">
-          Search
-        </button>
-      </form>
+      <div className="mb-4">
+        <BookSearchBox defaultValue={params.search ?? ''} classLevel={params.class_level} />
+      </div>
 
 
 
