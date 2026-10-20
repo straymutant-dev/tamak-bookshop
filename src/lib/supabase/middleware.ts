@@ -1,4 +1,5 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
+// Path: src/lib/supabase/middleware.ts
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { sessionCookieOptions } from './cookieOptions';
@@ -53,21 +54,14 @@ function unreachableResponse() {
   );
 }
 
-// Crawler / browser files that must be served as-is on BOTH hosts. Without this the admin
+// Crawler / browser files that must be served as-is on BOTH hosts (/sw.js is the offline POS service worker). Without this the admin
 // host would rewrite /robots.txt to /admin/robots.txt (a 404). Image files (favicon.ico,
 // icon.png, apple-icon.png, opengraph-image.png, /icons/*.png) never reach this code:
 // the matcher in src/middleware.ts already skips favicon.ico and .png/.svg/.jpg files.
-const METADATA_PATHS = new Set(['/robots.txt', '/sitemap.xml', '/manifest.webmanifest']);
+const METADATA_PATHS = new Set(['/robots.txt', '/sitemap.xml', '/manifest.webmanifest', '/sw.js']);
 
 function isMetadataRoute(pathname: string) {
   return METADATA_PATHS.has(pathname);
-}
-
-// Invite pages live outside /admin but are opened on the admin host
-const ADMIN_HOST_PASSTHROUGH = ['/auth/confirm', '/accept-invite', '/invite-expired'];
-
-function isAdminHostPassthrough(pathname: string) {
-  return ADMIN_HOST_PASSTHROUGH.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
 export async function updateSession(request: NextRequest) {
@@ -142,7 +136,6 @@ export async function updateSession(request: NextRequest) {
     else if (originalPath === '/') effectivePath = '/admin/inventory';
     else if (originalPath.startsWith('/admin')) effectivePath = originalPath;
     else if (originalPath.startsWith('/account') || originalPath.startsWith('/api') || originalPath.startsWith('/about')) effectivePath = originalPath; // shared routes — serve as-is, no admin prefix
-    else if (isAdminHostPassthrough(originalPath)) effectivePath = originalPath; // invite flow: serve as-is
     else effectivePath = `/admin${originalPath}`;
   }
 

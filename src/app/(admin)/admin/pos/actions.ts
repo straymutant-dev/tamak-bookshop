@@ -1,143 +1,15 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
+// Path: src/app/(admin)/admin/pos/actions.ts
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
 import { formatGHS } from '@/lib/currency';
+import type { Json } from '@/lib/database.types';
 
 interface SaleItem {
   bookId: string;
   title: string;
   quantity: number;
-}
-
-interface SyncPosSaleInput {
-  clientUuid: string;
-  orderNumber: string;
-  soldAt: string;
-  customerName: string | null;
-  paymentMethod: 'cash' | 'mobile_money' | 'bank_transfer';
-  paymentReference: string | null;
-  items: { bookId: string; quantity: number; unitPricePesewas: number }[];
-}
-
-type SyncPosSaleResult =
-  | { ok: true; orderId: string; warnings: string[] }
-  | { ok: false; error: string; retryable: boolean };
-
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const ORDER_NUMBER_PATTERN = /^TB-POS-[A-Z0-9]{6,16}-[A-Z0-9]{4}$/;
-const PAYMENT_METHODS = ['cash', 'mobile_money', 'bank_transfer'] as const;
-
-function validateSyncPosSaleInput(input: SyncPosSaleInput) {
-  if (!UUID_PATTERN.test(input.clientUuid)) throw new Error('Sale id is invalid');
-  if (!ORDER_NUMBER_PATTERN.test(input.orderNumber)) throw new Error('Order number is invalid');
-  if (!input.soldAt || !Number.isFinite(Date.parse(input.soldAt))) throw new Error('Sale time is invalid');
-  if (!PAYMENT_METHODS.includes(input.paymentMethod)) throw new Error('Choose a payment method');
-  if (input.customerName !== null && typeof input.customerName !== 'string') {
-    throw new Error('Customer name is invalid');
-  }
-  if (input.paymentReference !== null && typeof input.paymentReference !== 'string') {
-    throw new Error('Payment reference is invalid');
-  }
-  if (!Array.isArray(input.items) || input.items.length === 0) throw new Error('The sale has no items');
-
-  for (const item of input.items) {
-    if (!UUID_PATTERN.test(item.bookId)) throw new Error('A book id in this sale is invalid');
-    if (!Number.isSafeInteger(item.quantity) || item.quantity <= 0) {
-      throw new Error('A quantity in this sale is invalid');
-    }
-    if (!Number.isSafeInteger(item.unitPricePesewas) || item.unitPricePesewas < 0) {
-      throw new Error('A price in this sale is invalid');
-    }
-  }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function isRetryableRpcError(error: { code?: string; status?: number }) {
-  if (error.code === 'P0001') return false;
-  return (
-    error.status === 408 ||
-    error.status === 425 ||
-    error.status === 429 ||
-    (error.status !== undefined && error.status >= 500) ||
-    error.code?.startsWith('08') === true
-  );
-}
-
-function getSyncWarnings(data: unknown): { orderId: string; warnings: string[] } {
-  if (
-    !isRecord(data) ||
-    typeof data.order_id !== 'string' ||
-    !Array.isArray(data.shortfalls) ||
-    !Array.isArray(data.price_changes)
-  ) {
-    throw new Error('The server returned an invalid sale sync response');
-  }
-
-  const warnings: string[] = [];
-  for (const shortfall of data.shortfalls) {
-    if (
-      !isRecord(shortfall) ||
-      typeof shortfall.title !== 'string' ||
-      typeof shortfall.short !== 'number'
-    ) {
-      throw new Error('The server returned invalid stock warning data');
-    }
-    warnings.push(`${shortfall.title}: ${shortfall.short} fewer copies were in stock than sold.`);
-  }
-  for (const priceChange of data.price_changes) {
-    if (
-      !isRecord(priceChange) ||
-      typeof priceChange.title !== 'string' ||
-      typeof priceChange.quoted !== 'number' ||
-      typeof priceChange.current !== 'number'
-    ) {
-      throw new Error('The server returned invalid price warning data');
-    }
-    warnings.push(
-      `${priceChange.title}: sold at ${formatGHS(priceChange.quoted)}; current price is ${formatGHS(priceChange.current)}.`
-    );
-  }
-
-  return { orderId: data.order_id, warnings };
-}
-
-export async function syncPosSale(input: SyncPosSaleInput): Promise<SyncPosSaleResult> {
-  validateSyncPosSaleInput(input);
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: 'Sign in to sync this sale', retryable: true };
-
-  const { data, error } = await supabase.rpc('sync_pos_sale', {
-    p_client_uuid: input.clientUuid,
-    p_order_number: input.orderNumber,
-    p_sold_at: input.soldAt,
-    p_customer_name: input.customerName,
-    p_method: input.paymentMethod,
-    p_reference: input.paymentReference,
-    p_items: input.items.map(({ bookId, quantity, unitPricePesewas }) => ({
-      bookId,
-      quantity,
-      unitPricePesewas,
-    })),
-  });
-
-  if (error) {
-    return {
-      ok: false,
-      error: error.message,
-      retryable: isRetryableRpcError(error),
-    };
-  }
-
-  const sale = getSyncWarnings(data);
-  return { ok: true, orderId: sale.orderId, warnings: sale.warnings };
 }
 
 export async function submitPosSale(formData: FormData) {
@@ -249,4 +121,87 @@ export async function submitPosSale(formData: FormData) {
     paymentReference,
     customerName,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Offline POS: record a sale that was saved on the till first.
+// Returns a result object (instead of throwing) because Next hides the text of thrown errors in
+// production, and the till needs to tell "try again later" apart from "the server refused this".
+// ---------------------------------------------------------------------------
+
+export interface SyncSaleInput {
+  clientUuid: string;
+  orderNumber: string;
+  soldAt: string;
+  customerName: string | null;
+  paymentMethod: string;
+  paymentReference: string | null;
+  items: { bookId: string; quantity: number; unitPricePesewas: number }[];
+}
+
+export type SyncSaleResult =
+  | { ok: true; orderId: string; orderNumber: string; alreadySynced: boolean; warnings: string[] }
+  | { ok: false; error: string; retryable: boolean };
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export async function syncPosSale(input: SyncSaleInput): Promise<SyncSaleResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { ok: false, error: 'Please sign in again so your saved sales can be sent.', retryable: true };
+  }
+
+  const method = (['cash', 'mobile_money', 'bank_transfer'] as const).find((m) => m === input.paymentMethod);
+  const itemsOk =
+    Array.isArray(input.items) &&
+    input.items.length > 0 &&
+    input.items.every(
+      (i) =>
+        UUID_RE.test(i.bookId) &&
+        Number.isInteger(i.quantity) &&
+        i.quantity > 0 &&
+        Number.isInteger(i.unitPricePesewas) &&
+        i.unitPricePesewas >= 0
+    );
+  if (!UUID_RE.test(input.clientUuid) || !method || !itemsOk) {
+    return { ok: false, error: 'This saved sale is not valid.', retryable: false };
+  }
+
+  const { data, error } = await supabase.rpc('sync_pos_sale', {
+    p_client_uuid: input.clientUuid,
+    p_order_number: input.orderNumber,
+    p_sold_at: input.soldAt,
+    p_customer_name: input.customerName,
+    p_method: method,
+    p_reference: input.paymentReference,
+    p_items: input.items as unknown as Json,
+  });
+
+  if (error || !data) {
+    const message = error?.message ?? 'The sale could not be saved';
+    const retryable = /fetch failed|network|timeout|timed out|econn|enotfound|not authenticated/i.test(message);
+    return { ok: false, error: message, retryable };
+  }
+
+  const r = data as {
+    order_id: string;
+    order_number: string;
+    already_synced: boolean;
+    shortfalls: { title: string; sold: number; inStock: number }[];
+    price_changes: { title: string; quoted: number; current: number }[];
+  };
+
+  const warnings: string[] = [
+    ...(r.price_changes ?? []).map(
+      (p) => `${p.title}: sold at ${formatGHS(p.quoted)}, the price is now ${formatGHS(p.current)}.`
+    ),
+    ...(r.shortfalls ?? []).map(
+      (s) => `${s.title}: only ${s.inStock} of ${s.sold} were in stock when this sale reached the shop system. Check the stock count.`
+    ),
+  ];
+
+  return { ok: true, orderId: r.order_id, orderNumber: r.order_number, alreadySynced: r.already_synced, warnings };
 }
