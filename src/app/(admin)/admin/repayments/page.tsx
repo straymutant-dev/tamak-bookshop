@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { formatGHS } from '@/lib/currency';
 import RepaymentsClient from './RepaymentsClient';
 import RequestCard from './RequestCard';
+import { Check } from 'lucide-react';
+import EmptyState from '@/components/ui/EmptyState';
 
 export default async function RepaymentsPage() {
   const supabase = await createClient();
@@ -93,8 +95,13 @@ export default async function RepaymentsPage() {
           />
         ))}
         {(pendingRequests ?? []).length === 0 && (
-          <p className="text-sm text-ink-muted">No payments waiting for confirmation.</p>
-        )}
+          <EmptyState
+          compact
+          icon={<Check size={22} />}
+          title="No payments to confirm"
+          body="When a vendor reports a payment, it shows up here."
+           />
+         )}
       </div>
 
       <h2 className="mb-3 text-lg font-semibold text-ink">Record a payment received in person</h2>

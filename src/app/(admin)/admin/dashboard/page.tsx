@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server';
 import { formatGHS } from '@/lib/currency';
 import StatRow, { type Stat } from '@/components/admin/StatRow';
 import OrderNumberButton from '@/components/orders/OrderNumberButton';
+import NeedsAttention from '@/components/admin/NeedsAttention';
+import { AlertTriangle, BookOpen, Receipt, UserCheck } from 'lucide-react';
 
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
@@ -47,15 +49,21 @@ export default async function AdminDashboardPage() {
   }
 
   const stats: Stat[] = [
-    { label: "Today's sales", value: formatGHS(todaysSalesTotal), accent: 'green' },
-    { label: 'Active books', value: activeBooksCount ?? 0 },
-    { label: 'Low stock', value: lowStockCount ?? 0, accent: (lowStockCount ?? 0) > 0 ? 'terracotta' : undefined },
+    { label: "Today's sales", value: formatGHS(todaysSalesTotal), accent: 'green', icon: <Receipt size={18} /> },
+    { label: 'Active books', value: activeBooksCount ?? 0, icon: <BookOpen size={18} /> },
+    {
+      label: 'Low stock',
+      value: lowStockCount ?? 0,
+      accent: (lowStockCount ?? 0) > 0 ? 'terracotta' : undefined,
+      icon: <AlertTriangle size={18} />,
+    },
   ];
   if (isAdmin) {
     stats.push({
       label: 'Pending vendors',
       value: pendingVendorCount ?? 0,
       accent: (pendingVendorCount ?? 0) > 0 ? 'gold' : undefined,
+      icon: <UserCheck size={18} />,
     });
   }
 
@@ -65,6 +73,8 @@ export default async function AdminDashboardPage() {
       <p className="mb-6 text-sm text-ink-muted">Here&rsquo;s what&rsquo;s happening today.</p>
 
       <StatRow stats={stats} />
+
+      <NeedsAttention isAdmin={isAdmin} />
 
       <div className="mb-8 flex flex-wrap gap-3">
         <Link href="/admin/pos" className="rounded-md bg-brand-green px-4 py-2 text-sm font-medium text-white">

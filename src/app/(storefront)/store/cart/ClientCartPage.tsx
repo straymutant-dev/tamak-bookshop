@@ -8,6 +8,9 @@ import { formatGHS } from '@/lib/currency';
 import { submitOrder } from './actions';
 import PaymentInstructions from '@/components/payments/PaymentInstructions';
 import type { PaymentAccount } from '@/lib/paymentTypes';
+import EmptyState from '@/components/ui/EmptyState';
+import { ShoppingBag } from 'lucide-react';
+
 
 type Fulfillment = 'pickup' | 'delivery';
 
@@ -122,16 +125,15 @@ export default function ClientCartPage({
     );
   }
 
-  if (items.length === 0) {
-    return (
-      <div className="mx-auto max-w-md px-6 py-20 text-center">
-        <h1 className="mb-2 font-serif text-2xl text-ink">Your cart is empty</h1>
-        <a href="/store" className="text-sm text-brand-green hover:underline">
-          Browse the catalog
-        </a>
-      </div>
-    );
-  }
+  <div className="mx-auto max-w-md px-6 py-16">
+    <EmptyState
+      icon={<ShoppingBag size={22} />}
+      title="Your cart is empty"
+      body="Browse the catalogue and add the books you need. Pickup is in Kasoa."
+      actionHref="/store"
+      actionLabel="Browse books"
+    />
+  </div>
 
   return (
     <div className="mx-auto grid max-w-4xl gap-10 px-6 py-10 md:grid-cols-[1fr_320px]">

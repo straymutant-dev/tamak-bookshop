@@ -6,6 +6,8 @@ import { formatGHS } from '@/lib/currency';
 import StatRow from '@/components/admin/StatRow';
 import PayBalanceCard from './PayBalanceCard';
 import OrderNumberButton from '@/components/orders/OrderNumberButton';
+import CreditGauge from './CreditGauge';
+
 
 const STATUS_LABEL: Record<string, string> = {
   pending: 'Pending approval',
@@ -91,6 +93,17 @@ export default async function VendorDashboardPage() {
             : 'Your wholesale account is not currently active. Contact Tamak Bookshop for details.'}
         </div>
       )}
+      
+      {isApproved && limit > 0 && (
+        <CreditGauge
+        limitPesewas={limit}
+        usedPesewas={Math.min(limit, owed + reserved)}
+        availablePesewas={available}
+        canPay={owed > 0}
+        />
+      )}
+
+      
 
       <StatRow
         stats={[
@@ -143,7 +156,11 @@ export default async function VendorDashboardPage() {
         </div>
       )}
 
-      {isApproved && owed > 0 && <PayBalanceCard outstandingPesewas={owed} defaultPhone={profile?.phone ?? ''} />}
+  {isApproved && owed > 0 && (
+    <div id="pay-balance">
+      <PayBalanceCard outstandingPesewas={owed} defaultPhone={profile?.phone ?? ''} />
+    </div>
+  )}
 
       {(requests ?? []).length > 0 && (
         <div className="mb-8 rounded-md border border-border-beige bg-surface-card p-5">

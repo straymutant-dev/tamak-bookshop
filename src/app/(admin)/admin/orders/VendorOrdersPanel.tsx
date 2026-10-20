@@ -1,7 +1,8 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
 import { createClient } from '@/lib/supabase/server';
 import VendorOrderCard from './VendorOrderCard';
-
+import EmptyState from '@/components/ui/EmptyState';
+import { Check } from 'lucide-react';
 /**
  * Online orders waiting for staff: vendor credit orders to approve, and vendor or
  * customer orders paid by Mobile Money / bank / cash / cheque that need the payment

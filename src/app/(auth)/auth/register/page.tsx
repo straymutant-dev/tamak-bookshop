@@ -1,11 +1,12 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { registerClient, registerVendor, resendSignupCode, verifyPhoneCode } from './actions';
+import { registerClient, registerVendor, verifyPhoneCode } from './actions';
 import PasswordInput from '@/components/ui/PasswordInput';
+import OtpInput from '@/components/ui/OtpInput';
 import PasswordStrengthMeter from '@/components/ui/PasswordStrengthMeter';
 import Turnstile, { TURNSTILE_ENABLED } from '@/components/ui/Turnstile';
 
@@ -17,20 +18,9 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [verifyPhone, setVerifyPhone] = useState<string | null>(null);
-  const [verifyEmail, setVerifyEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [captchaToken, setCaptchaToken] = useState('');
-  const [resendToken, setResendToken] = useState('');
-  const [notice, setNotice] = useState<string | null>(null);
-  const [cooldown, setCooldown] = useState(0);
   const passwordMismatch = confirmPassword.length > 0 && password !== confirmPassword;
-
-  // Counts the "Resend code" wait down once per second.
-  useEffect(() => {
-    if (cooldown <= 0) return;
-    const id = setTimeout(() => setCooldown((c) => c - 1), 1000);
-    return () => clearTimeout(id);
-  }, [cooldown]);
 
   async function handleSubmit(formData: FormData) {
     const action = accountType === 'client' ? registerClient : registerVendor;
@@ -40,28 +30,11 @@ export default function RegisterPage() {
       setError(result.error);
       return;
     }
-    if (result?.phone) {
-      setVerifyPhone(result.phone);
-      setVerifyEmail(result.email ?? '');
-      setCooldown(60);
-    }
-  }
-
-  async function handleResend(formData: FormData) {
-    setError(null);
-    setNotice(null);
-    const result = await resendSignupCode(formData);
-    if (result?.error) {
-      setError(result.error);
-      return;
-    }
-    setNotice('We sent a new code.');
-    setCooldown(60);
+    if (result?.phone) setVerifyPhone(result.phone);
   }
 
   async function handleVerify(formData: FormData) {
     setError(null);
-    setNotice(null);
     const result = await verifyPhoneCode(formData); // redirects on success
     if (result?.error) setError(result.error);
   }
@@ -75,37 +48,15 @@ export default function RegisterPage() {
         </p>
 
         {error && <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-        {notice && <p className="mb-4 rounded-md bg-brand-green/10 px-3 py-2 text-sm text-brand-green">{notice}</p>}
 
         <form action={handleVerify} className="flex flex-col gap-4">
           <input type="hidden" name="phone" value={verifyPhone} />
-          <input type="hidden" name="contactEmail" value={verifyEmail} />
-          <label className="flex flex-col gap-1 text-sm">
-            Verification code
-            <input
-              name="code"
-              required
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={6}
-              placeholder="123456"
-              className="rounded-md border border-brand-sage px-3 py-2 text-center text-lg tracking-widest"
-            />
-          </label>
+          <div className="flex flex-col gap-2 text-sm">
+            <span>Verification code</span>
+            <OtpInput name="code" error={Boolean(error)} />
+          </div>
           <button type="submit" className="rounded-md bg-brand-green px-4 py-2 font-medium text-white">
             Verify and continue
-          </button>
-        </form>
-
-        <form action={handleResend} className="mt-4 flex flex-col gap-2">
-          <input type="hidden" name="phone" value={verifyPhone} />
-          <Turnstile onToken={setResendToken} />
-          <button
-            type="submit"
-            disabled={cooldown > 0 || (TURNSTILE_ENABLED && !resendToken)}
-            className="self-start text-sm font-medium text-brand-green disabled:text-ink-muted"
-          >
-            {cooldown > 0 ? `Resend code in ${cooldown}s` : 'Resend code'}
           </button>
         </form>
 
@@ -178,12 +129,6 @@ export default function RegisterPage() {
           Phone number
           <input name="phone" type="tel" required placeholder="e.g. 024 123 4567" className="rounded-md border border-brand-sage px-3 py-2" />
           <span className="text-xs text-ink-muted">We&rsquo;ll text you a code to verify this number.</span>
-        </label>
-
-        <label className="flex flex-col gap-1 text-sm">
-          Email for receipts <span className="text-xs text-ink-muted">(optional)</span>
-          <input name="contactEmail" type="email" placeholder="you@example.com" className="rounded-md border border-brand-sage px-3 py-2" />
-          <span className="text-xs text-ink-muted">We email your receipt when you order and when your payment is confirmed.</span>
         </label>
 
         <label className="flex flex-col gap-1 text-sm">
