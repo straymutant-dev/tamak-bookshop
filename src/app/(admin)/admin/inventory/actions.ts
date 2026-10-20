@@ -18,7 +18,6 @@ const AUDITED_FIELDS = [
   'buying_cost_pesewas',
   'customer_price_pesewas',
   'vendor_price_pesewas',
-  'low_stock_threshold',
 ] as const;
 
 function diffBook(before: Record<string, unknown>, after: Record<string, unknown>) {
@@ -73,8 +72,6 @@ async function uploadCoverIfProvided(bookId: string, file: File | null) {
 
 function readBookFields(formData: FormData) {
   const rawClassLevel = String(formData.get('class_level') ?? '').trim();
-  const rawThreshold = String(formData.get('low_stock_threshold') ?? '').trim();
-  const parsedThreshold = rawThreshold === '' ? NaN : Math.floor(Number(rawThreshold));
 
   return {
     // title, author, category are NOT NULL in the books table (see
@@ -98,7 +95,6 @@ function readBookFields(formData: FormData) {
     class_level: rawClassLevel && isClassLevel(rawClassLevel) ? rawClassLevel : undefined,
     academic_year: String(formData.get('academic_year') ?? '').trim() || undefined,
     // undefined = let the DB default (5) apply on insert, or leave unchanged on update
-    low_stock_threshold: Number.isFinite(parsedThreshold) && parsedThreshold >= 0 ? parsedThreshold : undefined,
     buying_cost_pesewas: ghsToPesewas(Number(formData.get('buying_cost') ?? 0)),
     customer_price_pesewas: ghsToPesewas(Number(formData.get('customer_price') ?? 0)),
     vendor_price_pesewas: ghsToPesewas(Number(formData.get('vendor_price') ?? 0)),
