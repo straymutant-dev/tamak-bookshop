@@ -1,4 +1,7 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
+// On-device storage for the offline POS (IndexedDB through Dexie):
+//   books  - a copy of the catalogue, so the till can search and sell with no internet
+//   outbox - every counter sale, saved HERE FIRST, then sent to the server (queue-first)
 import Dexie, { type Table } from 'dexie';
 
 export interface CachedBook {
@@ -6,31 +9,38 @@ export interface CachedBook {
   title: string;
   author: string | null;
   category: string | null;
+  subject: string | null;
   class_level: string | null;
   customer_price_pesewas: number;
-  vendor_price_pesewas: number;
   stock_quantity: number;
   cover_image_url: string | null;
-  updated_at: string;
 }
+
+export type OutboxStatus = 'pending' | 'syncing' | 'synced' | 'failed';
 
 export interface OutboxSale {
   id?: number;
-  client_uuid: string; // idempotency key for sync
-  items: {
-    book_id: string;
-    quantity: number;
-    unit_price_pesewas: number;
-  }[];
-  total_pesewas: number;
-  pay_method: 'cash' | 'mobile_money' | 'bank_transfer' | 'credit';
-  pay_status: 'paid' | 'pending';
-  payment_reference: string | null;
-  vendor_id: string | null;
-  cashier_id: string;
-  created_at: string;
-  synced: 0 | 1;
-  sync_error: string | null;
+  /** Idempotency key: the server records a sale with this id only once. */
+  clientUuid: string;
+  /** Printed on the receipt; the server keeps the same number. */
+  orderNumber: string;
+  soldAt: string;
+  items: { bookId: string; title: string; quantity: number; unitPricePesewas: number }[];
+  totalPesewas: number;
+  paymentMethod: 'cash' | 'mobile_money' | 'bank_transfer';
+  paymentReference: string | null;
+  customerName: string | null;
+  cashierName: string;
+  status: OutboxStatus;
+  attempts: number;
+  lastError: string | null;
+  /** Filled in once the server has the sale. */
+  orderId: string | null;
+  syncedAt: string | null;
+  /** Receipts printed before the sale reached the server (logged after it syncs). */
+  printCount: number;
+  /** Notes from the server (price or stock differences) worth showing the cashier. */
+  warnings: string[];
 }
 
 export class TamakOfflineDB extends Dexie {
@@ -39,37 +49,63 @@ export class TamakOfflineDB extends Dexie {
 
   constructor() {
     super('tamak-bookshop-pos');
+    // v1 was an unused scaffold. v2 is the real thing.
     this.version(1).stores({
       books: 'id, title, category, class_level, updated_at',
       outbox: '++id, client_uuid, synced, created_at',
+    });
+    this.version(2).stores({
+      books: 'id, title',
+      outbox: '++id, &clientUuid, status, soldAt',
     });
   }
 }
 
 export const offlineDB = new TamakOfflineDB();
 
-/** Replace the cached catalog with a fresh snapshot from Supabase */
-export async function refreshBookCache(books: CachedBook[]) {
+/** Replace the saved catalogue with a fresh copy from the server. */
+export async function cacheBooks(books: CachedBook[]) {
   await offlineDB.transaction('rw', offlineDB.books, async () => {
     await offlineDB.books.clear();
     await offlineDB.books.bulkPut(books);
   });
 }
 
-/** Queue a sale made while offline */
-export async function queueOfflineSale(sale: Omit<OutboxSale, 'id' | 'synced' | 'sync_error'>) {
-  return offlineDB.outbox.add({ ...sale, synced: 0, sync_error: null });
+export async function getCachedBooks(): Promise<CachedBook[]> {
+  return offlineDB.books.orderBy('title').toArray();
 }
 
-/** Get all sales not yet synced to Supabase */
-export async function getPendingSales() {
-  return offlineDB.outbox.where('synced').equals(0).toArray();
+export type NewSale = Pick<
+  OutboxSale,
+  | 'clientUuid'
+  | 'orderNumber'
+  | 'soldAt'
+  | 'items'
+  | 'totalPesewas'
+  | 'paymentMethod'
+  | 'paymentReference'
+  | 'customerName'
+  | 'cashierName'
+>;
+
+/** Save a sale on this device. Returns the saved row. */
+export async function queueSale(sale: NewSale): Promise<OutboxSale> {
+  const row: OutboxSale = {
+    ...sale,
+    status: 'pending',
+    attempts: 0,
+    lastError: null,
+    orderId: null,
+    syncedAt: null,
+    printCount: 0,
+    warnings: [],
+  };
+  const id = await offlineDB.outbox.add(row);
+  return { ...row, id };
 }
 
-export async function markSaleSynced(id: number) {
-  return offlineDB.outbox.update(id, { synced: 1, sync_error: null });
-}
-
-export async function markSaleFailed(id: number, error: string) {
-  return offlineDB.outbox.update(id, { sync_error: error });
+export async function bumpPrintCount(clientUuid: string) {
+  await offlineDB.outbox.where('clientUuid').equals(clientUuid).modify((r) => {
+    r.printCount += 1;
+  });
 }

@@ -206,6 +206,36 @@ export async function restoreBook(bookId: string) {
   revalidatePath('/admin/inventory');
 }
 
+/** Delete (archive) or restore several books at once. Admin only; every book gets its own audit entry. */
+export async function bulkSetBooksActive(bookIds: string[], active: boolean) {
+  const userId = await assertAdmin();
+
+  const ids = Array.from(new Set(bookIds)).filter((id) => /^[0-9a-fA-F-]{36}$/.test(id));
+  if (ids.length === 0) throw new Error('No books selected');
+  if (ids.length > 200) throw new Error('Select 200 books or fewer at a time');
+
+  const supabase = await createClient();
+
+  const { data: books, error: readError } = await supabase.from('books').select('id, title').in('id', ids);
+  if (readError) throw new Error(readError.message);
+
+  const { error } = await supabase.from('books').update({ is_active: active }).in('id', ids);
+  if (error) throw new Error(error.message);
+
+  const { error: auditError } = await supabase.from('audit_logs').insert(
+    (books ?? []).map((book) => ({
+      staff_id: userId,
+      action: active ? 'book_restored' : 'book_archived',
+      entity_type: 'books',
+      entity_id: book.id,
+      details_json: { title: book.title, bulk: true } as Json,
+    }))
+  );
+  if (auditError) console.error('audit log insert failed:', auditError.message);
+
+  revalidatePath('/admin/inventory');
+}
+
 async function logAudit(action: string, bookId: string, details: Record<string, Json>) {
   const supabase = await createClient();
   const {

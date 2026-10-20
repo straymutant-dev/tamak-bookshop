@@ -787,6 +787,18 @@ export type Database = {
         Args: { p_order_id: string; p_reference: string }
         Returns: undefined
       }
+      sync_pos_sale: {
+        Args: {
+          p_client_uuid: string
+          p_customer_name: string | null
+          p_items: Json
+          p_method: Database["public"]["Enums"]["pay_method"]
+          p_order_number: string
+          p_reference: string | null
+          p_sold_at: string
+        }
+        Returns: Json
+      }
       require_staff_or_admin: { Args: never; Returns: string }
     }
     Enums: {
