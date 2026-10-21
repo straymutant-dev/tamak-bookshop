@@ -154,6 +154,19 @@ export default function PosTerminal({ books, cashierName }: { books: Book[]; cas
 
   const waiting = outbox.filter((s) => s.status === 'pending' || s.status === 'syncing');
   const failed = outbox.filter((s) => s.status === 'failed');
+  const unsentCount = waiting.length + failed.length;
+
+  // The browser asks "Leave site?" if the tab is closed or reloaded while sales are still unsent.
+  useEffect(() => {
+    if (unsentCount === 0) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [unsentCount]);
+
   const totalPesewas = cart.reduce((sum, line) => sum + line.unitPricePesewas * line.quantity, 0);
 
   // ---- cart -------------------------------------------------------------

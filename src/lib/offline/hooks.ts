@@ -1,4 +1,5 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
+// Path: src/lib/offline/hooks.ts
 'use client';
 
 import { useEffect, useState, useSyncExternalStore } from 'react';
@@ -21,6 +22,19 @@ export function useOnline(): boolean {
     () => navigator.onLine,
     () => true
   );
+}
+
+/** How many sales on this device have not reached the server yet (waiting, sending, or refused). */
+export function useUnsentSalesCount(): number {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    const sub = liveQuery(() => offlineDB.outbox.where('status').anyOf('pending', 'syncing', 'failed').count()).subscribe({
+      next: setCount,
+      error: (e) => console.error('[offline] could not count saved sales', e),
+    });
+    return () => sub.unsubscribe();
+  }, []);
+  return count;
 }
 
 /** Every sale saved on this device, kept live as rows change. */

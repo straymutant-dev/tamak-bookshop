@@ -1,4 +1,5 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
+// Path: src/components/store/UserMenuDrawer.tsx
 'use client';
 
 import { useState } from 'react';
@@ -18,11 +19,16 @@ export default function UserMenuDrawer({
   onClose,
   fullName,
   extraItems = [],
+  unsentSales = 0,
+  onBeforeLogout,
 }: {
   open: boolean;
   onClose: () => void;
   fullName: string | null;
   extraItems?: UserMenuItem[];
+  // Staff only: counter sales still saved on this device (the admin header passes these in).
+  unsentSales?: number;
+  onBeforeLogout?: () => Promise<void>;
 }) {
   const [confirmingLogout, setConfirmingLogout] = useState(false);
   const pathname = usePathname();
@@ -57,12 +63,17 @@ export default function UserMenuDrawer({
 
       <ConfirmDialog
         open={confirmingLogout}
-        title="Log out?"
-        message="You'll need to sign in again to access your account."
-        confirmLabel="Log out"
+        title={unsentSales > 0 ? 'Sales not sent yet' : 'Log out?'}
+        message={
+          unsentSales > 0
+            ? `${unsentSales} counter ${unsentSales === 1 ? 'sale is' : 'sales are'} saved on this device but ${unsentSales === 1 ? 'has' : 'have'} not reached the shop system. They stay here and are sent when the internet is back and someone signs in on this device. Do not clear the browser data or switch devices before then.`
+            : "You'll need to sign in again to access your account."
+        }
+        confirmLabel={unsentSales > 0 ? 'Log out anyway' : 'Log out'}
         cancelLabel="Cancel"
         onCancel={() => setConfirmingLogout(false)}
         onConfirm={async () => {
+          await onBeforeLogout?.();
           await signOutAction();
         }}
       />
