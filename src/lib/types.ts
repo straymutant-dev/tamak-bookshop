@@ -4,6 +4,7 @@ import type { Database } from '@/lib/database.types';
 
 // Levels the shop sells (the UI lists). 'Tertiary' stays in the DB enum only.
 export type ClassLevel =
+  | 'Nursery'
   | 'KG'
   | 'Primary 1-3'
   | 'Primary 4-6'
@@ -12,6 +13,7 @@ export type ClassLevel =
   | 'General';
 
 export const CLASS_LEVELS: ClassLevel[] = [
+  'Nursery',
   'KG',
   'Primary 1-3',
   'Primary 4-6',

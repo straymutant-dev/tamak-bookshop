@@ -3,6 +3,7 @@
 
 import { useState, useTransition } from 'react';
 import { useToast } from '@/components/ui/ToastContext';
+import { useConfirm } from '@/components/ui/ConfirmContext';
 import {
   createPaymentAccount,
   deletePaymentAccount,
@@ -27,6 +28,7 @@ export default function PaymentAccountsManager({ accounts }: { accounts: Account
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const { showToast } = useToast();
+  const confirm = useConfirm();
 
   const editing = accounts.find((a) => a.id === editingId) ?? null;
   const fieldClass = 'rounded-md border border-brand-sage px-3 py-2 text-sm text-ink';
@@ -53,8 +55,13 @@ export default function PaymentAccountsManager({ accounts }: { accounts: Account
     }
   }
 
-  function handleDelete(a: AccountRow) {
-    if (!window.confirm(`Delete "${a.label}"? Customers will no longer see it.`)) return;
+  async function handleDelete(a: AccountRow) {
+    const ok = await confirm({
+      title: `Delete "${a.label}"?`,
+      message: 'Customers will no longer see this payment account.',
+      confirmLabel: 'Delete',
+    });
+    if (!ok) return;
     run(() => deletePaymentAccount(a.id), 'Payment account deleted');
   }
 

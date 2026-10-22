@@ -4,6 +4,7 @@
 import { useState, useTransition } from 'react';
 import { formatGHS } from '@/lib/currency';
 import { useToast } from '@/components/ui/ToastContext';
+import { useConfirm } from '@/components/ui/ConfirmContext';
 import { approveCreditOrder, confirmOrderPayment, rejectVendorOrder } from './vendorActions';
 
 export interface VendorOrderCardProps {
@@ -54,6 +55,7 @@ export default function VendorOrderCard({ order, vendor }: VendorOrderCardProps)
   const [error, setError] = useState<string | null>(null);
   const [resolved, setResolved] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const confirm = useConfirm();
   const { showToast } = useToast();
 
   const overLimit = isCredit && vendor.owedPesewas + order.totalPesewas > vendor.limitPesewas;
@@ -74,8 +76,16 @@ export default function VendorOrderCard({ order, vendor }: VendorOrderCardProps)
     });
   }
 
-  function handleReject() {
-    if (!window.confirm(`Reject ${order.orderNumber} and remove it? The vendor's reserved credit is released.`)) return;
+  async function handleReject() {
+    const ok = await confirm({
+      title: `Reject ${order.orderNumber}?`,
+      message: isCredit
+        ? "The order is removed and the vendor's reserved credit is released."
+        : 'The order is removed from the list.',
+      confirmLabel: 'Reject order',
+      cancelLabel: 'Keep order',
+    });
+    if (!ok) return;
     run(() => rejectVendorOrder(order.id), 'Order rejected');
   }
 

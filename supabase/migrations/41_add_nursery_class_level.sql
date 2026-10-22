@@ -1,0 +1,1 @@
+alter type public.class_grade_level add value if not exists 'Nursery' before 'KG';

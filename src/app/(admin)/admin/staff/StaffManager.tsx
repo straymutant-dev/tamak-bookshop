@@ -5,6 +5,7 @@ import { useState, useTransition } from 'react';
 import UserAvatar from '@/components/ui/UserAvatar';
 import { inviteStaff, removeStaffAccess } from './actions';
 import { useToast } from '@/components/ui/ToastContext';
+import { useConfirm } from '@/components/ui/ConfirmContext';
 
 interface StaffRow {
   id: string;
@@ -17,6 +18,7 @@ export default function StaffManager({ staff }: { staff: StaffRow[] }) {
   const [error, setError] = useState<string | null>(null);
   const [inviteSent, setInviteSent] = useState(false);
   const { showToast } = useToast();
+  const confirm = useConfirm();
 
   function handleInvite(formData: FormData) {
     setError(null);
@@ -32,9 +34,14 @@ export default function StaffManager({ staff }: { staff: StaffRow[] }) {
     });
   }
 
-  function handleRemove(userId: string) {
+  async function handleRemove(userId: string) {
     setError(null);
-    if (!confirm('Remove staff access for this account? They will become a regular client account.')) return;
+    const ok = await confirm({
+      title: 'Remove staff access?',
+      message: 'They will become a regular client account and lose access to the staff portal.',
+      confirmLabel: 'Remove access',
+    });
+    if (!ok) return;
     const formData = new FormData();
     formData.set('userId', userId);
     startTransition(async () => {

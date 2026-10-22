@@ -5,6 +5,7 @@ import { useState, useTransition } from 'react';
 import UserAvatar from '@/components/ui/UserAvatar';
 import { inviteAdmin, demoteAdmin } from './actions';
 import { useToast } from '@/components/ui/ToastContext';
+import { useConfirm } from '@/components/ui/ConfirmContext';
 
 interface AdminRow {
   id: string;
@@ -24,6 +25,7 @@ export default function TeamManager({
   const [error, setError] = useState<string | null>(null);
   const [inviteSent, setInviteSent] = useState(false);
   const { showToast } = useToast();
+  const confirm = useConfirm();
 
   function handleInvite(formData: FormData) {
     setError(null);
@@ -38,9 +40,14 @@ export default function TeamManager({
     });
   }
 
-  function handleDemote(userId: string, newRole: string) {
+  async function handleDemote(userId: string, newRole: string) {
     setError(null);
-    if (!confirm(`Demote this admin to ${newRole}?`)) return;
+    const ok = await confirm({
+      title: 'Demote this admin?',
+      message: `They will become ${newRole} and lose admin access straight away.`,
+      confirmLabel: 'Demote',
+    });
+    if (!ok) return;
     const formData = new FormData();
     formData.set('userId', userId);
     formData.set('newRole', newRole);
