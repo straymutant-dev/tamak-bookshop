@@ -17,7 +17,7 @@ export default async function NeedsAttention({ isAdmin }: { isAdmin: boolean }) 
     isAdmin
       ? supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'vendor').eq('vendor_status', 'pending')
       : Promise.resolve({ count: 0 }),
-    supabase.rpc('low_stock_count'),
+    supabase.rpc('low_stock_count' as never),
     supabase.from('repayment_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
   ]);
 

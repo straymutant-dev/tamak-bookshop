@@ -8,6 +8,7 @@ import type { Book, ClassLevel } from '@/lib/types';
 import { formatGHS } from '@/lib/currency';
 import { bulkSetBooksActive, deleteBook, restoreBook } from './actions';
 import { useToast } from '@/components/ui/ToastContext';
+import { useConfirm } from '@/components/ui/ConfirmContext';
 import BookFormModal from './BookFormModal';
 import StockAdjustModal from './StockAdjustModal';
 import ImageWithSkeleton from '@/components/ui/ImageWithSkeleton';
@@ -153,6 +154,7 @@ export default function InventoryTable({
   const [isNavigating, startNavigation] = useTransition();
   const [isBulkBusy, startBulk] = useTransition();
   const { showToast } = useToast();
+  const confirm = useConfirm();
 
   const viewingArchived = activeFilters.status === 'archived';
   const pageIds = books.map((book) => book.id);
@@ -207,12 +209,24 @@ export default function InventoryTable({
     setSelectedIds(allSelected ? new Set() : new Set(pageIds));
   }
 
-  function handleBulk(active: boolean) {
+  async function handleBulk(active: boolean) {
     const ids = [...selectedIds];
-    const message = active
-      ? `Restore ${ids.length} selected ${ids.length === 1 ? 'book' : 'books'}?`
-      : `Delete ${ids.length} selected ${ids.length === 1 ? 'book' : 'books'}? They can be restored later from the Archived filter.`;
-    if (!confirm(message)) return;
+    const count = `${ids.length} ${ids.length === 1 ? 'book' : 'books'}`;
+    const ok = await confirm(
+      active
+        ? {
+            title: `Restore ${count}?`,
+            message: 'They will appear in your active inventory and on the storefront again.',
+            confirmLabel: 'Restore',
+            tone: 'default',
+          }
+        : {
+            title: `Delete ${count}?`,
+            message: 'They are taken off the storefront and can be restored later from the Archived filter.',
+            confirmLabel: 'Delete',
+          }
+    );
+    if (!ok) return;
 
     startBulk(async () => {
       try {
@@ -226,7 +240,12 @@ export default function InventoryTable({
   }
 
   async function handleDelete(bookId: string) {
-    if (!confirm('Delete this book? It can be restored later from the Archived filter.')) return;
+    const ok = await confirm({
+      title: 'Delete this book?',
+      message: 'It is taken off the storefront and can be restored later from the Archived filter.',
+      confirmLabel: 'Delete book',
+    });
+    if (!ok) return;
     setDeletingId(bookId);
     try {
       await deleteBook(bookId);
