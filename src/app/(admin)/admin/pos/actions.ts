@@ -174,9 +174,9 @@ export async function syncPosSale(input: SyncSaleInput): Promise<SyncSaleResult>
     p_client_uuid: input.clientUuid,
     p_order_number: input.orderNumber,
     p_sold_at: input.soldAt,
-    p_customer_name: input.customerName,
+    p_customer_name: input.customerName ?? '',
     p_method: method,
-    p_reference: input.paymentReference,
+    p_reference: input.paymentReference ?? '',
     p_items: input.items as unknown as Json,
   });
 
