@@ -31,12 +31,12 @@ export default function MobileDrawer({
       <button
         aria-label="Close menu"
         onClick={onClose}
-        className={`absolute inset-0 bg-ink/40 transition-opacity duration-300 ${
+        className={`glass-backdrop absolute inset-0 bg-ink/40 transition-opacity duration-300 ${
           open ? 'opacity-100' : 'opacity-0'
         }`}
       />
       <div
-        className={`absolute right-0 top-0 flex h-full w-72 max-w-[80%] flex-col bg-surface-card shadow-xl transition-transform duration-300 ${
+        className={`glass-drawer absolute right-0 top-0 flex h-full w-72 max-w-[80%] flex-col bg-surface-card shadow-xl transition-transform duration-300 ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
       >

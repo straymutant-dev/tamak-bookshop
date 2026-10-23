@@ -40,28 +40,35 @@ export default async function FeaturedBooks() {
   const featured = [...recent, ...rest].slice(0, FEATURED_COUNT);
 
   return (
-    <section className="mx-auto max-w-6xl px-6 py-12">
-      <div className="mb-6 flex items-baseline justify-between">
-        <h2 className="font-serif text-2xl text-ink">Fast-moving this term</h2>
-        <Link href="/store" className="text-sm text-brand-green hover:underline">
-          View full catalog
+    <section className="featured-books">
+      <div className="featured-books__heading">
+        <div>
+          <p className="featured-books__eyebrow">A good place to start</p>
+          <h2 className="font-serif text-3xl text-ink">Popular this term</h2>
+        </div>
+        <Link href="/store" className="featured-books__link">
+          Explore the full catalog
+          <span aria-hidden="true">↗</span>
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-4">
+      <div className="featured-books__grid">
         {featured.map((book, i) => (
           <ScrollReveal key={book.id} delay={i * 60}>
-            <Link href={`/store#book-${book.id}`} className="block border-b border-border-beige pb-4">
-              <ImageWithSkeleton
-                src={book.cover_image_url}
-                alt={book.title}
-                className="mb-3 aspect-3/4 w-full rounded-sm"
-              />
-              <p className="text-sm font-medium text-ink">{book.title}</p>
-              <p className="mt-1 text-xs text-ink-muted">
-                {[book.subject, book.class_level].filter(Boolean).join(' · ') || book.category || '—'}
+            <Link href={`/store#book-${book.id}`} className="featured-books__card">
+              <div className="featured-books__cover">
+                <ImageWithSkeleton
+                  src={book.cover_image_url}
+                  alt={book.title}
+                  className="aspect-3/4 w-full rounded-sm"
+                />
+                <span className="featured-books__cover-arrow" aria-hidden="true">↗</span>
+              </div>
+              <p className="featured-books__category">
+                {[book.subject, book.class_level].filter(Boolean).join(' · ') || book.category || 'School book'}
               </p>
-              <p className="mt-1 text-sm text-ink">{formatGHS(book.customer_price_pesewas)}</p>
+              <p className="featured-books__title">{book.title}</p>
+              <p className="featured-books__price">{formatGHS(book.customer_price_pesewas)}</p>
             </Link>
           </ScrollReveal>
         ))}

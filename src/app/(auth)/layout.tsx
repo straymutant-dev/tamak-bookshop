@@ -15,7 +15,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
   // keeping this one page's chrome minimal avoids duplicating that.
   if (onAdminHost) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-surface-cream px-6 py-16">
+      <div className="auth-shell flex min-h-screen flex-col items-center justify-center px-6 py-16">
         <BrandMark className="mb-8 h-10" />
         {children}
       </div>
@@ -23,9 +23,9 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-surface-cream">
+    <div className="auth-shell flex min-h-screen flex-col">
       <Navbar userFullName={null} />
-      <main className="flex-1">{children}</main>
+      <main className="auth-main flex-1">{children}</main>
       <Footer />
     </div>
   );

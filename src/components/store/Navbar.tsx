@@ -83,7 +83,7 @@ export default function Navbar({
 
   return (
 
-    <header className="border-b border-border-beige bg-surface-card">
+    <header className="glass-nav">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
 
         <Link href={dashboardHref} className="flex items-center shrink-0">

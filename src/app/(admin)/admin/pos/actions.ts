@@ -88,7 +88,13 @@ export async function submitPosSale(formData: FormData) {
   if (orderError || !order) throw new Error(orderError?.message ?? 'Failed to create order');
 
   const { error: itemsError } = await supabase.from('order_items').insert(
-    orderItems.map(({ title, ...item }) => ({ ...item, order_id: order.id }))
+    orderItems.map((item) => ({
+      book_id: item.book_id,
+      quantity: item.quantity,
+      unit_price_pesewas: item.unit_price_pesewas,
+      line_total_pesewas: item.line_total_pesewas,
+      order_id: order.id,
+    }))
   );
   if (itemsError) throw new Error(itemsError.message);
 

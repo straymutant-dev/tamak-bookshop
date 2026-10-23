@@ -78,7 +78,7 @@ export default function NotificationsList({ items, unread }: { items: Notificati
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="relative rounded-full p-2 text-ink hover:bg-surface-cream"
+        className="glass-icon-button relative rounded-full p-2 text-ink hover:bg-surface-cream"
         aria-label="Notifications"
       >
         <Bell size={20} />
@@ -90,7 +90,7 @@ export default function NotificationsList({ items, unread }: { items: Notificati
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-30 mt-2 w-96 max-w-[92vw] overflow-hidden rounded-2xl border border-border-beige bg-surface-card shadow-lg">
+        <div className="glass-popover absolute right-0 top-full z-30 mt-2 w-96 max-w-[92vw] overflow-hidden rounded-2xl border border-border-beige shadow-lg">
           <div className="flex items-center justify-between px-5 py-4">
             <span className="font-serif text-xl text-brand-green">Notifications</span>
             {unread > 0 && (

@@ -1,84 +1,70 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
 import Link from 'next/link';
+import { ArrowDownRight, ArrowRight, BookOpen, Sparkles } from 'lucide-react';
 import HeroImage from './HeroImage';
 import HeroSearch from './HeroSearch';
 
-const SPINE_COLORS = [
-  { color: 'var(--color-brand-green)', height: '3rem' },
-  { color: 'var(--color-accent-terracotta)', height: '4rem' },
-  { color: 'var(--color-accent-gold)', height: '2.5rem' },
-  { color: 'var(--color-brand-sage)', height: '4.5rem' },
-];
-
-function HeroContent({ light = false }: { light?: boolean }) {
-  return (
-    <div>
-      <div className="mb-5 flex items-end gap-1.5">
-        {SPINE_COLORS.map((spine, i) => (
-          <span
-            key={i}
-            className="w-1.5 rounded-full"
-            style={{ backgroundColor: spine.color, height: spine.height }}
-          />
-        ))}
-      </div>
-
-      <h1
-        className={`max-w-md font-serif text-4xl leading-[1.1] md:text-5xl ${light ? 'text-white' : 'text-ink'}`}
-      >
-        The textbooks Kasoa&rsquo;s schools are already assigning this term
-      </h1>
-
-      <p className={`mt-5 max-w-md text-base leading-7 ${light ? 'text-white/85' : 'text-ink-muted'}`}>
-        Search by title, author or class level — from KG workbooks to SHS core texts —
-        and get exactly what your child needs before the first week. Schools and
-        vendors can also order wholesale on credit.
-      </p>
-
-      <div className="mt-8 max-w-md">
-        <HeroSearch />
-      </div>
-
-      <div className="mt-6 flex flex-wrap gap-3">
-        <Link
-          href="/store"
-          className="rounded-md bg-brand-green px-5 py-3 text-sm font-medium text-white hover:bg-brand-green/90"
-        >
-          Browse textbooks
-        </Link>
-        <Link
-          href="/auth/register?type=vendor"
-          className={
-            light
-              ? 'rounded-md border border-white/60 px-5 py-3 text-sm font-medium text-white hover:border-white'
-              : 'rounded-md border border-brand-sage px-5 py-3 text-sm font-medium text-ink hover:border-brand-green hover:text-brand-green'
-          }
-        >
-          Apply for a wholesale account
-        </Link>
-      </div>
-    </div>
-  );
-}
-
 export default function Hero() {
   return (
-    <section>
-      {/* Mobile: image as a full-bleed backdrop, content overlaid on top */}
-      <div className="relative min-h-[85vh] overflow-hidden md:hidden">
-        <div className="absolute inset-0">
-          <HeroImage className="h-full rounded-none" />
-          <div className="absolute inset-0 bg-linear-to-t from-ink/90 via-ink/40 to-ink/10" />
+    <section className="home-hero">
+      <div className="home-hero__texture" aria-hidden="true" />
+      <div className="home-hero__inner">
+        <div className="home-hero__copy">
+          <p className="home-hero__eyebrow">
+            <Sparkles size={15} aria-hidden="true" />
+            Kasoa&rsquo;s home for school books
+          </p>
+          <h1 className="home-hero__title">
+            Great books.
+            <br />
+            <span>Brighter</span> futures.
+          </h1>
+          <p className="home-hero__description">
+            From KG workbooks to SHS core texts, find the books your learner needs
+            for a confident start to the term.
+          </p>
+
+          <div className="home-hero__search">
+            <HeroSearch />
+          </div>
+
+          <div className="home-hero__actions">
+            <Link href="/store" className="home-hero__button">
+              Browse the collection
+              <ArrowRight size={17} aria-hidden="true" />
+            </Link>
+            <Link href="/auth/register?type=vendor" className="home-hero__secondary">
+              School &amp; wholesale orders
+              <ArrowDownRight size={16} aria-hidden="true" />
+            </Link>
+          </div>
+
+          <div className="home-hero__note">
+            <BookOpen size={17} strokeWidth={1.7} aria-hidden="true" />
+            <span>Easy pickup in Kasoa · Mobile money accepted</span>
+          </div>
         </div>
-        <div className="relative flex min-h-[85vh] flex-col justify-end px-6 pb-10 pt-24">
-          <HeroContent light />
+
+        <div className="home-hero__art" aria-label="Students learning with books">
+          <div className="home-hero__art-orbit" aria-hidden="true" />
+          <div className="home-hero__image">
+            <HeroImage />
+          </div>
+          <div className="home-hero__badge">
+            <span className="home-hero__badge-icon">
+              <BookOpen size={18} aria-hidden="true" />
+            </span>
+            <span>
+              <strong>Ready for the term</strong>
+              <small>Books for every class level</small>
+            </span>
+          </div>
         </div>
       </div>
-
-      {/* Desktop/tablet: original side-by-side layout, unchanged */}
-      <div className="mx-auto hidden max-w-6xl px-6 py-12 md:grid md:grid-cols-[55%_45%] md:items-center md:gap-10 md:py-20">
-        <HeroContent />
-        <HeroImage />
+      <div className="home-hero__bottom" aria-hidden="true">
+        <span>Books for every stage</span>
+        <span className="home-hero__bottom-line" />
+        <span>One good book can change everything.</span>
       </div>
     </section>
   );

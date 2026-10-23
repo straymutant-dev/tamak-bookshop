@@ -16,7 +16,7 @@ export default async function LoginPage({
 
   return (
     <div className="mx-auto w-full max-w-md px-6 py-12">
-      <div className="rounded-2xl border border-border-beige bg-surface-card px-8 py-10">
+      <div className="auth-card rounded-2xl border border-border-beige px-8 py-10">
         <h1 className="mb-1 font-serif text-3xl text-brand-green">Sign in</h1>
         <p className="mb-6 text-sm text-ink-muted">Tamak Bookshop account access</p>
 

@@ -41,7 +41,7 @@ export default function RegisterPage() {
 
   if (verifyPhone) {
     return (
-      <div className="mx-auto flex w-full max-w-sm flex-col justify-center px-6 py-16">
+      <div className="auth-card register-card mx-auto flex w-full max-w-sm flex-col justify-center rounded-2xl border border-border-beige px-7 py-9">
         <h1 className="mb-1 text-2xl font-semibold text-ink">Verify your phone</h1>
         <p className="mb-6 text-sm text-ink-muted">
           We sent a 6-digit code by SMS to {verifyPhone}. Enter it below.
@@ -76,9 +76,9 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-sm flex-col justify-center px-6 py-16">
+    <div className="auth-card register-card mx-auto my-12 flex w-full max-w-sm flex-col justify-center rounded-2xl border border-border-beige px-7 py-9">
       <h1 className="mb-1 text-2xl font-semibold text-ink">Create an account</h1>
-      <p className="mb-6 text-sm text-ink-muted">Tamak Bookshop</p>
+      <p className="register-card__subtitle mb-6 text-sm text-ink-muted">Tamak Bookshop</p>
 
       {searchParams.get('error') && (
         <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{searchParams.get('error')}</p>
@@ -86,7 +86,7 @@ export default function RegisterPage() {
 
       {error && <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-      <div className="mb-6 flex rounded-md border border-brand-sage p-1">
+      <div className="register-card__tabs mb-6 flex rounded-md border border-brand-sage p-1">
         <button
           type="button"
           onClick={() => setAccountType('client')}

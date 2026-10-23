@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import type { Book } from '@/lib/types';
 import { formatGHS } from '@/lib/currency';
 import { useCart } from '@/lib/cart/CartContext';
@@ -34,26 +35,29 @@ export default function BookCard({
   }
 
   return (
-    <div className="border-b border-border-beige pb-4">
-      <ImageWithSkeleton
-        src={book.cover_image_url}
-        alt={book.title}
-        className="mb-3 aspect-3/4 w-full rounded-sm"
-      />
-      
-      <p className="text-sm font-medium text-ink">{book.title}</p>
-      <p className="mt-1 text-xs text-ink-muted">
-        {[book.subject, book.class_level].filter(Boolean).join(' · ') || book.category || '—'}
-      </p>
-            <p className="mt-1 text-sm text-ink">
-              {formatGHS(displayPrice)}
-              {isVendor && <span className="ml-1 text-xs text-ink-muted">(wholesale)</span>}
-            </p>
-
+    <div id={`book-${book.id}`} className="featured-books__card featured-books__catalog-card">
+      <Link href={`/store#book-${book.id}`} className="featured-books__catalog-link">
+        <div className="featured-books__cover">
+          <ImageWithSkeleton
+            src={book.cover_image_url}
+            alt={book.title}
+            className="aspect-3/4 w-full rounded-sm"
+          />
+          <span className="featured-books__cover-arrow" aria-hidden="true">↗</span>
+        </div>
+        <p className="featured-books__category">
+          {[book.subject, book.class_level].filter(Boolean).join(' · ') || book.category || 'School book'}
+        </p>
+        <p className="featured-books__title">{book.title}</p>
+        <p className="featured-books__price">
+          {formatGHS(displayPrice)}
+          {isVendor && <span className="ml-1 text-xs font-normal text-ink-muted">(wholesale)</span>}
+        </p>
+      </Link>
       <button
         onClick={handleAdd}
         disabled={book.stock_quantity <= 0 || (isVendor && !vendorApproved)}
-        className="mt-2 w-full rounded-md border border-brand-sage py-1.5 text-xs font-medium text-ink hover:border-brand-green hover:text-brand-green disabled:cursor-not-allowed disabled:opacity-40"
+        className="featured-books__add-button"
       >
         {isVendor && !vendorApproved
           ? 'Awaiting approval'

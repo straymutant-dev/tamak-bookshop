@@ -22,7 +22,7 @@ export default function HeroImage({ className = '' }: { className?: string }) {
         style={{
           background: failed
             ? 'linear-gradient(160deg, #164A41 0%, #5E8C61 100%)'
-            : 'linear-gradient(160deg, rgba(22,74,65,0.55) 0%, rgba(22,74,65,0.05) 60%)',
+            : 'linear-gradient(160deg, rgba(22,74,65,0.16) 0%, rgba(22,74,65,0) 60%)',
         }}
       />
     </div>

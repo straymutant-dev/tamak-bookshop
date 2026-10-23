@@ -1,21 +1,31 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
-'use client';
+"use client";
 
-import { useEffect, useRef, useState, useTransition } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowDown, ArrowUp, ArrowUpDown, BookOpen, Search } from 'lucide-react';
-import type { Book, ClassLevel } from '@/lib/types';
-import { formatGHS } from '@/lib/currency';
-import { bulkSetBooksActive, deleteBook, restoreBook } from './actions';
-import { useToast } from '@/components/ui/ToastContext';
-import { useConfirm } from '@/components/ui/ConfirmContext';
-import BookFormModal from './BookFormModal';
-import StockAdjustModal from './StockAdjustModal';
-import ImageWithSkeleton from '@/components/ui/ImageWithSkeleton';
-import EmptyState from '@/components/ui/EmptyState';
-import Pagination from '@/components/ui/Pagination';
-import BulkActionBar from '@/components/ui/BulkActionBar';
-import { INVENTORY_PAGE_SIZE, type InventorySortKey, type SortDirection } from './inventoryQuery';
+import { useEffect, useRef, useState, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  BookOpen,
+  Search,
+} from "lucide-react";
+import type { Book, ClassLevel } from "@/lib/types";
+import { formatGHS } from "@/lib/currency";
+import { bulkSetBooksActive, deleteBook, restoreBook } from "./actions";
+import { useToast } from "@/components/ui/ToastContext";
+import { useConfirm } from "@/components/ui/ConfirmContext";
+import BookFormModal from "./BookFormModal";
+import StockAdjustModal from "./StockAdjustModal";
+import ImageWithSkeleton from "@/components/ui/ImageWithSkeleton";
+import EmptyState from "@/components/ui/EmptyState";
+import Pagination from "@/components/ui/Pagination";
+import BulkActionBar from "@/components/ui/BulkActionBar";
+import {
+  INVENTORY_PAGE_SIZE,
+  type InventorySortKey,
+  type SortDirection,
+} from "./inventoryQuery";
 
 type ActiveFilters = {
   category?: string;
@@ -40,17 +50,17 @@ function SortHeader({
   onSort: (column: InventorySortKey) => void;
 }) {
   const active = sort === column;
-  const Icon = !active ? ArrowUpDown : dir === 'asc' ? ArrowUp : ArrowDown;
+  const Icon = !active ? ArrowUpDown : dir === "asc" ? ArrowUp : ArrowDown;
 
   return (
     <th
       className="px-4 py-3"
-      aria-sort={active ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+      aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"}
     >
       <button
         type="button"
         onClick={() => onSort(column)}
-        className={`inline-flex items-center gap-1 hover:text-ink ${active ? 'text-ink' : ''}`}
+        className={`inline-flex items-center gap-1 hover:text-ink ${active ? "text-ink" : ""}`}
         aria-label={`Sort by ${label}`}
       >
         {label}
@@ -146,26 +156,31 @@ export default function InventoryTable({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [editingBook, setEditingBook] = useState<Book | null | 'new'>(null);
+  const [editingBook, setEditingBook] = useState<Book | null | "new">(null);
   const [stockBook, setStockBook] = useState<Book | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [restoringId, setRestoringId] = useState<string | null>(null);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selection, setSelection] = useState<{
+    books: Book[];
+    ids: Set<string>;
+  }>({
+    books,
+    ids: new Set(),
+  });
   const [isNavigating, startNavigation] = useTransition();
   const [isBulkBusy, startBulk] = useTransition();
   const { showToast } = useToast();
   const confirm = useConfirm();
 
-  const viewingArchived = activeFilters.status === 'archived';
+  const viewingArchived = activeFilters.status === "archived";
   const pageIds = books.map((book) => book.id);
+  const selectedIds =
+    selection.books === books ? selection.ids : new Set<string>();
   const selectedCount = selectedIds.size;
-  const allSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id));
-  const someSelected = pageIds.some((id) => selectedIds.has(id)) && !allSelected;
-
-  // A new page of results (or a refresh after an action) starts with nothing selected.
-  useEffect(() => {
-    setSelectedIds(new Set());
-  }, [books]);
+  const allSelected =
+    pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id));
+  const someSelected =
+    pageIds.some((id) => selectedIds.has(id)) && !allSelected;
 
   function navigate(next: URLSearchParams) {
     startNavigation(() => {
@@ -177,79 +192,85 @@ export default function InventoryTable({
     const next = new URLSearchParams(searchParams.toString());
     if (value) next.set(key, value);
     else next.delete(key);
-    next.delete('page');
+    next.delete("page");
     navigate(next);
   }
 
   function handleSort(column: InventorySortKey) {
     const next = new URLSearchParams(searchParams.toString());
-    next.set('sort', column);
-    next.set('dir', sort === column && dir === 'asc' ? 'desc' : 'asc');
-    next.delete('page');
+    next.set("sort", column);
+    next.set("dir", sort === column && dir === "asc" ? "desc" : "asc");
+    next.delete("page");
     navigate(next);
   }
 
   function handlePageChange(nextPage: number) {
     const next = new URLSearchParams(searchParams.toString());
-    if (nextPage <= 1) next.delete('page');
-    else next.set('page', String(nextPage));
+    if (nextPage <= 1) next.delete("page");
+    else next.set("page", String(nextPage));
     navigate(next);
   }
 
   function toggleSelect(id: string) {
-    setSelectedIds((current) => {
-      const next = new Set(current);
+    setSelection((current) => {
+      const next = new Set(current.books === books ? current.ids : []);
       if (next.has(id)) next.delete(id);
       else next.add(id);
-      return next;
+      return { books, ids: next };
     });
   }
 
   function toggleSelectAll() {
-    setSelectedIds(allSelected ? new Set() : new Set(pageIds));
+    setSelection({ books, ids: allSelected ? new Set() : new Set(pageIds) });
   }
 
   async function handleBulk(active: boolean) {
     const ids = [...selectedIds];
-    const count = `${ids.length} ${ids.length === 1 ? 'book' : 'books'}`;
+    const count = `${ids.length} ${ids.length === 1 ? "book" : "books"}`;
     const ok = await confirm(
       active
         ? {
             title: `Restore ${count}?`,
-            message: 'They will appear in your active inventory and on the storefront again.',
-            confirmLabel: 'Restore',
-            tone: 'default',
+            message:
+              "They will appear in your active inventory and on the storefront again.",
+            confirmLabel: "Restore",
+            tone: "default",
           }
         : {
             title: `Delete ${count}?`,
-            message: 'They are taken off the storefront and can be restored later from the Archived filter.',
-            confirmLabel: 'Delete',
-          }
+            message:
+              "They are taken off the storefront and can be restored later from the Archived filter.",
+            confirmLabel: "Delete",
+          },
     );
     if (!ok) return;
 
     startBulk(async () => {
       try {
         await bulkSetBooksActive(ids, active);
-        setSelectedIds(new Set());
-        showToast(active ? 'Books restored' : 'Books deleted');
+        setSelection({ books, ids: new Set() });
+        showToast(active ? "Books restored" : "Books deleted");
       } catch (e) {
-        showToast(e instanceof Error ? e.message : 'Something went wrong', 'error');
+        showToast(
+          e instanceof Error ? e.message : "Something went wrong",
+          "error",
+        );
       }
     });
   }
 
   async function handleDelete(bookId: string) {
     const ok = await confirm({
-      title: 'Delete this book?',
-      message: 'It is taken off the storefront and can be restored later from the Archived filter.',
-      confirmLabel: 'Delete book',
+      title: "Delete this book?",
+      message:
+        "It is taken off the storefront and can be restored later from the Archived filter.",
+      confirmLabel: "Delete book",
     });
     if (!ok) return;
     setDeletingId(bookId);
     try {
       await deleteBook(bookId);
-      showToast('Book deleted');
+      showToast("Book deleted");
     } finally {
       setDeletingId(null);
     }
@@ -259,21 +280,27 @@ export default function InventoryTable({
     setRestoringId(bookId);
     try {
       await restoreBook(bookId);
-      showToast('Book restored');
+      showToast("Book restored");
     } finally {
       setRestoringId(null);
     }
   }
 
-  const firstShown = totalCount === 0 ? 0 : (page - 1) * INVENTORY_PAGE_SIZE + 1;
+  const firstShown =
+    totalCount === 0 ? 0 : (page - 1) * INVENTORY_PAGE_SIZE + 1;
   const lastShown = (page - 1) * INVENTORY_PAGE_SIZE + books.length;
 
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-end gap-3">
         <select
-          defaultValue={activeFilters.status ?? 'active'}
-          onChange={(e) => updateFilter('status', e.target.value === 'active' ? '' : e.target.value)}
+          defaultValue={activeFilters.status ?? "active"}
+          onChange={(e) =>
+            updateFilter(
+              "status",
+              e.target.value === "active" ? "" : e.target.value,
+            )
+          }
           className="rounded-md border border-brand-sage px-3 py-2 text-sm"
         >
           <option value="active">Active books</option>
@@ -281,8 +308,8 @@ export default function InventoryTable({
         </select>
 
         <select
-          defaultValue={activeFilters.class_level ?? ''}
-          onChange={(e) => updateFilter('class_level', e.target.value)}
+          defaultValue={activeFilters.class_level ?? ""}
+          onChange={(e) => updateFilter("class_level", e.target.value)}
           className="rounded-md border border-brand-sage px-3 py-2 text-sm"
         >
           <option value="">All class levels</option>
@@ -294,8 +321,8 @@ export default function InventoryTable({
         </select>
 
         <select
-          defaultValue={activeFilters.category ?? ''}
-          onChange={(e) => updateFilter('category', e.target.value)}
+          defaultValue={activeFilters.category ?? ""}
+          onChange={(e) => updateFilter("category", e.target.value)}
           className="rounded-md border border-brand-sage px-3 py-2 text-sm"
         >
           <option value="">All categories</option>
@@ -307,8 +334,8 @@ export default function InventoryTable({
         </select>
 
         <select
-          defaultValue={activeFilters.subject ?? ''}
-          onChange={(e) => updateFilter('subject', e.target.value)}
+          defaultValue={activeFilters.subject ?? ""}
+          onChange={(e) => updateFilter("subject", e.target.value)}
           className="rounded-md border border-brand-sage px-3 py-2 text-sm"
         >
           <option value="">All subjects</option>
@@ -321,9 +348,10 @@ export default function InventoryTable({
 
         <input
           placeholder="Academic year"
-          defaultValue={activeFilters.academic_year ?? ''}
+          defaultValue={activeFilters.academic_year ?? ""}
           onBlur={(e) => {
-            if (e.target.value !== (activeFilters.academic_year ?? '')) updateFilter('academic_year', e.target.value);
+            if (e.target.value !== (activeFilters.academic_year ?? ""))
+              updateFilter("academic_year", e.target.value);
           }}
           className="rounded-md border border-brand-sage px-3 py-2 text-sm"
         />
@@ -331,16 +359,22 @@ export default function InventoryTable({
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            const value = String(new FormData(e.currentTarget).get('q') ?? '').trim();
-            updateFilter('q', value);
+            const value = String(
+              new FormData(e.currentTarget).get("q") ?? "",
+            ).trim();
+            updateFilter("q", value);
           }}
           className="flex items-center rounded-md border border-brand-sage bg-surface-card focus-within:border-brand-green"
         >
-          <Search size={16} className="ml-3 shrink-0 text-ink-muted" aria-hidden="true" />
+          <Search
+            size={16}
+            className="ml-3 shrink-0 text-ink-muted"
+            aria-hidden="true"
+          />
           <input
             name="q"
             type="search"
-            defaultValue={activeFilters.q ?? ''}
+            defaultValue={activeFilters.q ?? ""}
             placeholder="Search title or author"
             aria-label="Search title or author"
             className="w-48 bg-transparent px-2 py-2 text-sm outline-none"
@@ -355,7 +389,7 @@ export default function InventoryTable({
             Download PDF
           </a>
           <button
-            onClick={() => setEditingBook('new')}
+            onClick={() => setEditingBook("new")}
             className="rounded-md bg-brand-green px-4 py-2 text-sm font-medium text-white"
           >
             Add book
@@ -377,23 +411,55 @@ export default function InventoryTable({
                 />
               </th>
               <th className="px-4 py-3">Cover</th>
-              <SortHeader label="Title" column="title" sort={sort} dir={dir} onSort={handleSort} />
-              <SortHeader label="Category / Level" column="category" sort={sort} dir={dir} onSort={handleSort} />
-              <SortHeader label="Retail" column="retail" sort={sort} dir={dir} onSort={handleSort} />
-              <SortHeader label="Wholesale" column="wholesale" sort={sort} dir={dir} onSort={handleSort} />
-              <SortHeader label="Stock" column="stock" sort={sort} dir={dir} onSort={handleSort} />
+              <SortHeader
+                label="Title"
+                column="title"
+                sort={sort}
+                dir={dir}
+                onSort={handleSort}
+              />
+              <SortHeader
+                label="Category / Level"
+                column="category"
+                sort={sort}
+                dir={dir}
+                onSort={handleSort}
+              />
+              <SortHeader
+                label="Retail"
+                column="retail"
+                sort={sort}
+                dir={dir}
+                onSort={handleSort}
+              />
+              <SortHeader
+                label="Wholesale"
+                column="wholesale"
+                sort={sort}
+                dir={dir}
+                onSort={handleSort}
+              />
+              <SortHeader
+                label="Stock"
+                column="stock"
+                sort={sort}
+                dir={dir}
+                onSort={handleSort}
+              />
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody aria-busy={isNavigating}>
             {isNavigating &&
-              Array.from({ length: Math.min(books.length || 6, 8) }, (_, i) => <SkeletonRow key={`skeleton-${i}`} />)}
+              Array.from({ length: Math.min(books.length || 6, 8) }, (_, i) => (
+                <SkeletonRow key={`skeleton-${i}`} />
+              ))}
 
             {!isNavigating &&
               books.map((book) => (
                 <tr
                   key={book.id}
-                  className={`border-t border-border-beige ${selectedIds.has(book.id) ? 'bg-surface-cream/60' : ''}`}
+                  className={`border-t border-border-beige ${selectedIds.has(book.id) ? "bg-surface-cream/60" : ""}`}
                 >
                   <td className="px-4 py-3">
                     <SelectCheckbox
@@ -403,23 +469,32 @@ export default function InventoryTable({
                     />
                   </td>
                   <td className="px-4 py-3">
-                    <ImageWithSkeleton src={book.cover_image_url} alt={book.title} className="h-12 w-9 rounded" />
+                    <ImageWithSkeleton
+                      src={book.cover_image_url}
+                      alt={book.title}
+                      className="h-12 w-9 rounded"
+                    />
                   </td>
                   <td className="px-4 py-3">
                     <div className="font-medium text-ink">{book.title}</div>
                     <div className="text-xs text-ink-muted">{book.author}</div>
                   </td>
                   <td className="px-4 py-3 text-ink-muted">
-                    {book.category ?? '—'} . {book.subject ?? '—'} . {book.class_level ?? '—'}
+                    {book.category ?? "—"} . {book.subject ?? "—"} .{" "}
+                    {book.class_level ?? "—"}
                   </td>
-                  <td className="px-4 py-3">{formatGHS(book.customer_price_pesewas)}</td>
-                  <td className="px-4 py-3">{formatGHS(book.vendor_price_pesewas)}</td>
+                  <td className="px-4 py-3">
+                    {formatGHS(book.customer_price_pesewas)}
+                  </td>
+                  <td className="px-4 py-3">
+                    {formatGHS(book.vendor_price_pesewas)}
+                  </td>
                   <td className="px-4 py-3">
                     <span
                       className={
                         book.stock_quantity <= book.low_stock_threshold
-                          ? 'font-medium text-accent-terracotta'
-                          : 'text-ink'
+                          ? "font-medium text-accent-terracotta"
+                          : "text-ink"
                       }
                     >
                       {book.stock_quantity}
@@ -429,10 +504,16 @@ export default function InventoryTable({
                     <div className="flex justify-end gap-3 text-xs">
                       {book.is_active ? (
                         <>
-                          <button onClick={() => setStockBook(book)} className="text-brand-green">
+                          <button
+                            onClick={() => setStockBook(book)}
+                            className="text-brand-green"
+                          >
                             Adjust stock
                           </button>
-                          <button onClick={() => setEditingBook(book)} className="text-accent-gold">
+                          <button
+                            onClick={() => setEditingBook(book)}
+                            className="text-accent-gold"
+                          >
                             Edit
                           </button>
                           <button
@@ -440,7 +521,7 @@ export default function InventoryTable({
                             disabled={deletingId === book.id}
                             className="text-accent-terracotta disabled:opacity-50"
                           >
-                            {deletingId === book.id ? 'Deleting…' : 'Delete'}
+                            {deletingId === book.id ? "Deleting…" : "Delete"}
                           </button>
                         </>
                       ) : (
@@ -449,7 +530,7 @@ export default function InventoryTable({
                           disabled={restoringId === book.id}
                           className="text-brand-green disabled:opacity-50"
                         >
-                          {restoringId === book.id ? 'Restoring…' : 'Restore'}
+                          {restoringId === book.id ? "Restoring…" : "Restore"}
                         </button>
                       )}
                     </div>
@@ -480,11 +561,19 @@ export default function InventoryTable({
           <p className="text-sm text-ink-muted tabular-nums">
             Showing {firstShown}–{lastShown} of {totalCount}
           </p>
-          <Pagination page={page} pageCount={pageCount} onPageChange={handlePageChange} disabled={isNavigating} />
+          <Pagination
+            page={page}
+            pageCount={pageCount}
+            onPageChange={handlePageChange}
+            disabled={isNavigating}
+          />
         </div>
       )}
 
-      <BulkActionBar count={selectedCount} onClear={() => setSelectedIds(new Set())}>
+      <BulkActionBar
+        count={selectedCount}
+        onClear={() => setSelection({ books, ids: new Set() })}
+      >
         {viewingArchived ? (
           <button
             type="button"
@@ -492,7 +581,7 @@ export default function InventoryTable({
             disabled={isBulkBusy}
             className="rounded-xl bg-brand-green px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
-            {isBulkBusy ? 'Restoring…' : 'Restore selected'}
+            {isBulkBusy ? "Restoring…" : "Restore selected"}
           </button>
         ) : (
           <button
@@ -501,20 +590,22 @@ export default function InventoryTable({
             disabled={isBulkBusy}
             className="rounded-xl bg-accent-terracotta px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
-            {isBulkBusy ? 'Deleting…' : 'Delete selected'}
+            {isBulkBusy ? "Deleting…" : "Delete selected"}
           </button>
         )}
       </BulkActionBar>
 
       {editingBook && (
         <BookFormModal
-          book={editingBook === 'new' ? null : editingBook}
+          book={editingBook === "new" ? null : editingBook}
           classLevels={classLevels}
           onClose={() => setEditingBook(null)}
         />
       )}
 
-      {stockBook && <StockAdjustModal book={stockBook} onClose={() => setStockBook(null)} />}
+      {stockBook && (
+        <StockAdjustModal book={stockBook} onClose={() => setStockBook(null)} />
+      )}
     </div>
   );
 }

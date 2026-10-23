@@ -83,7 +83,7 @@ export default function AdminHeader({
   }
 
   return (
-    <header className="border-b border-border-beige bg-surface-card">
+    <header className="glass-nav glass-nav--admin">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <Link href="/admin/dashboard" className="flex items-center shrink-0">
           <BrandMark className="h-8 sm:h-9 md:h-10" />
@@ -93,7 +93,7 @@ export default function AdminHeader({
           <div ref={navRef} className="relative">
             <button
               onClick={() => setNavOpen((v) => !v)}
-              className="flex items-center gap-2 rounded-md border border-border-beige px-3 py-2 text-ink hover:border-brand-sage"
+              className="admin-nav-trigger flex items-center gap-2 rounded-md border border-border-beige px-3 py-2 text-ink hover:border-brand-sage"
             >
               <LayoutGrid size={16} />
               <span>{currentLink?.label ?? 'Menu'}</span>
@@ -101,7 +101,7 @@ export default function AdminHeader({
             </button>
 
             {navOpen && (
-              <div className="absolute left-0 top-full z-20 mt-2 w-48 rounded-md border border-border-beige bg-surface-card py-2 shadow-lg">
+              <div className="glass-popover absolute left-0 top-full z-20 mt-2 w-48 rounded-md border border-border-beige py-2 shadow-lg">
                 {links.map((link) => (
                   <Link
                     key={link.href}

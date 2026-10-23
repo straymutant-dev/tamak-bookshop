@@ -22,14 +22,17 @@ const ITEMS = [
 
 export default function ValueStrip() {
   return (
-    <section className="border-y border-border-beige bg-brand-sage/10">
-      <div className="mx-auto grid max-w-6xl gap-6 px-6 py-10 sm:grid-cols-3 sm:gap-8 sm:py-12">
-        {ITEMS.map(({ icon: Icon, title, text }) => (
-          <div key={title} className="flex items-start gap-4">
-            <Icon className="mt-0.5 h-6 w-6 shrink-0 text-brand-green" strokeWidth={1.6} aria-hidden="true" />
+    <section className="value-strip">
+      <div className="value-strip__inner">
+        {ITEMS.map(({ icon: Icon, title, text }, index) => (
+          <div key={title} className="value-strip__item">
+            <span className="value-strip__number">0{index + 1}</span>
+            <div className="value-strip__icon">
+              <Icon className="h-5 w-5" strokeWidth={1.6} aria-hidden="true" />
+            </div>
             <div>
-              <h3 className="text-base font-medium text-ink">{title}</h3>
-              <p className="mt-1 text-sm leading-relaxed text-ink-muted">{text}</p>
+              <h3>{title}</h3>
+              <p>{text}</p>
             </div>
           </div>
         ))}
