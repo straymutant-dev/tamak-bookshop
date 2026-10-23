@@ -392,16 +392,25 @@ export default function PosTerminal({ books, cashierName }: { books: Book[]; cas
               <button
                 key={book.id}
                 onClick={() => addToCart(book)}
-                className="rounded-md border border-border-beige bg-surface-card p-3 text-left hover:border-brand-green"
+                className="featured-books__card featured-books__pos-card"
+                aria-label={`Add ${book.title} to the current sale`}
               >
-                <ImageWithSkeleton
-                  src={book.cover_image_url}
-                  alt={book.title}
-                  className="mb-2 aspect-3/4 w-full rounded-sm"
-                />
-                <p className="line-clamp-2 text-xs font-medium text-ink">{book.title}</p>
-                <p className="mt-1 text-xs text-ink-muted">{formatGHS(book.customer_price_pesewas)}</p>
-                <p className="text-xs text-ink-muted">Stock: {book.stock_quantity}</p>
+                <div className="featured-books__cover">
+                  <ImageWithSkeleton
+                    src={book.cover_image_url}
+                    alt=""
+                    className="aspect-3/4 w-full rounded-sm"
+                  />
+                  <span className="featured-books__cover-arrow" aria-hidden="true">+</span>
+                </div>
+                <p className="featured-books__category">
+                  {[book.subject, book.class_level].filter(Boolean).join(' · ') || 'School book'}
+                </p>
+                <p className="featured-books__title">{book.title}</p>
+                <div className="featured-books__pos-details">
+                  <p className="featured-books__price">{formatGHS(book.customer_price_pesewas)}</p>
+                  <p className="featured-books__pos-stock">Stock: {book.stock_quantity}</p>
+                </div>
               </button>
             ))}
             {filteredBooks.length === 0 && (
