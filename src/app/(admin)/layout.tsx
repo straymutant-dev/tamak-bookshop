@@ -41,9 +41,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!profile.invite_accepted_at) redirect('/accept-invite');
 
   return (
-    <div className="flex min-h-screen flex-col bg-surface-cream">
+    <div className="flex min-h-screen flex-col lg:pl-64">
            <AdminHeader
         fullName={profile.full_name}
+        email={user.email ?? null}
         role={profile.role}
         isSuperAdmin={profile.is_super_admin === true}
         notifications={<NotificationsPanel/>}

@@ -23,6 +23,8 @@
 }
 
 body {
+  position: relative;
+  isolation: isolate;
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
@@ -1097,10 +1099,7 @@ body {
 .auth-shell {
   position: relative;
   isolation: isolate;
-  background:
-    radial-gradient(ellipse at 12% 22%, rgba(94, 140, 97, 0.13), transparent 34%),
-    radial-gradient(ellipse at 86% 76%, rgba(216, 168, 78, 0.12), transparent 32%),
-    var(--color-surface-cream);
+  background: var(--color-brand-green);
 }
 
 .auth-shell::before {
@@ -1332,6 +1331,41 @@ body {
   justify-content: center;
   padding-top: 2rem;
   padding-bottom: 2rem;
+}
+
+.auth-shell::before {
+  display: none;
+}
+
+.site-logo-pattern {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+  grid-auto-rows: 7rem;
+  justify-items: center;
+  align-items: center;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.site-logo-pattern--auth {
+  position: absolute;
+}
+
+.site-logo-pattern__item {
+  display: block;
+  aspect-ratio: 5564 / 1336;
+  background-image: url("/images/logo.png");
+  background-repeat: no-repeat;
+  background-size: contain;
+  opacity: 0.085;
+}
+
+.site-logo-pattern--auth .site-logo-pattern__item {
+  filter: brightness(0) invert(1);
+  opacity: 0.14;
 }
 
 .auth-card {

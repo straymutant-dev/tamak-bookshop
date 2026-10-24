@@ -23,10 +23,16 @@ export default async function AccountLayout({ children }: { children: React.Reac
 
   let fullName: string | null = null;
   let role: 'client' | 'vendor' | 'staff' | 'admin' | null = null;
+  let isSuperAdmin = false;
   if (user) {
-    const { data: profile } = await supabase.from('profiles').select('full_name, role').eq('id', user.id).single();
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name, role, is_super_admin')
+      .eq('id', user.id)
+      .single();
     fullName = profile?.full_name ?? null;
     role = (profile?.role as 'client' | 'vendor' | 'staff' | 'admin') ?? null;
+    isSuperAdmin = profile?.is_super_admin === true;
   }
 
   // Middleware already guarantees only staff/admin ever reach this layout
@@ -34,8 +40,8 @@ export default async function AccountLayout({ children }: { children: React.Reac
   // they get here, so no separate role check is needed on top of this.
   if (onAdminHost) {
     return (
-      <div className="flex min-h-screen flex-col bg-surface-cream">
-        <AdminHeader fullName={fullName} notifications={<NotificationsPanel />} />
+      <div className="flex min-h-screen flex-col lg:pl-64">
+        <AdminHeader fullName={fullName} email={user?.email ?? null} role={role} isSuperAdmin={isSuperAdmin} notifications={<NotificationsPanel />} />
         <LiveRefresh tables={['orders', 'profiles', 'repayment_requests', 'credit_repayments', 'notifications']} />
         <NotificationToasts />
         <main className="flex-1">{children}</main>
@@ -45,7 +51,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-surface-cream">
+    <div className="flex min-h-screen flex-col">
       <Navbar userFullName={fullName} userRole={role} notifications={<NotificationsPanel />} />
       <LiveRefresh tables={['orders', 'profiles', 'repayment_requests', 'credit_repayments', 'notifications']} />
       <NotificationToasts />

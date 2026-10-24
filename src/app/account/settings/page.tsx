@@ -30,7 +30,7 @@ export default async function AccountSettingsPage() {
         <h1 className="mb-8 font-serif text-3xl text-ink">Account settings</h1>
 
         <div className="grid gap-6 sm:grid-cols-2">
-          <section className="rounded-md border border-border-beige bg-surface-card p-6 sm:col-span-2">
+          <section id="profile" className="scroll-mt-24 rounded-md border border-border-beige bg-surface-card p-6 sm:col-span-2">
             <h2 className="mb-4 text-sm font-medium text-ink-muted">Profile</h2>
 
             <div className="mb-4 flex flex-col gap-1 text-sm">
@@ -44,7 +44,7 @@ export default async function AccountSettingsPage() {
             <ProfileForm fullName={profile?.full_name ?? ''} phone={profile?.phone ?? ''} phoneLocked={!user.email} contactEmail={profile?.contact_email ?? ''} />
           </section>
 
-          <section className="rounded-md border border-border-beige bg-surface-card p-6 sm:col-span-2">
+          <section id="password" className="scroll-mt-24 rounded-md border border-border-beige bg-surface-card p-6 sm:col-span-2">
             <h2 className="mb-4 text-sm font-medium text-ink-muted">Password</h2>
             <PasswordForm />
           </section>

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertTriangle, Bell, Check, CreditCard, User } from 'lucide-react';
 import { markAllNotificationsRead, markNotificationRead } from '@/lib/actions/notifications';
+import { createClient } from '@/lib/supabase/client';
 
 export interface NotificationItem {
   id: string;
@@ -40,11 +41,63 @@ function ago(iso: string) {
 // Only unread notifications are ever passed in (see NotificationsPanel), so
 // once one is marked read it simply won't be in the list on the next fetch
 // — that's what makes it "disappear" after it's been attended to.
-export default function NotificationsList({ items, unread }: { items: NotificationItem[]; unread: number }) {
+export default function NotificationsList({ items: serverItems, unread: serverUnread }: { items: NotificationItem[]; unread: number }) {
   const router = useRouter();
+  // Notifications that arrived live since the page was last loaded from the server.
+  const [live, setLive] = useState<NotificationItem[]>([]);
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  // Once the server's copy contains a live notification, the server copy wins (no double counting).
+  const serverIds = new Set(serverItems.map((n) => n.id));
+  const liveOnly = live.filter((n) => !serverIds.has(n.id));
+  const items = [...liveOnly, ...serverItems];
+  const unread = serverUnread + liveOnly.length;
+
+  // Listen for this person's notifications, so the bell and its count update at once, with no reload.
+  useEffect(() => {
+    const supabase = createClient();
+    let cancelled = false;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    supabase.auth.getUser().then(({ data }) => {
+      if (cancelled || !data.user) return;
+      const userId = data.user.id;
+      const filter = `user_id=eq.${userId}`;
+
+      channel = supabase
+        .channel(`notification-bell-${userId}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter }, (payload) => {
+          const n = payload.new as {
+            id: string;
+            title: string;
+            body: string | null;
+            link: string | null;
+            created_at: string;
+          };
+          setLive((current) =>
+            current.some((x) => x.id === n.id)
+              ? current
+              : [{ id: n.id, title: n.title, body: n.body, link: n.link, readAt: null, createdAt: n.created_at }, ...current]
+          );
+          router.refresh();
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications', filter }, (payload) => {
+          const n = payload.new as { id: string; read_at: string | null };
+          if (n.read_at) {
+            setLive((current) => current.filter((x) => x.id !== n.id));
+            router.refresh();
+          }
+        })
+        .subscribe();
+    });
+
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [router]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -56,6 +109,7 @@ export default function NotificationsList({ items, unread }: { items: Notificati
 
   function openItem(item: NotificationItem) {
     setOpen(false);
+    setLive((current) => current.filter((x) => x.id !== item.id));
     startTransition(async () => {
       try {
         await markNotificationRead(item.id);
@@ -67,6 +121,7 @@ export default function NotificationsList({ items, unread }: { items: Notificati
   }
 
   function markAll() {
+    setLive([]);
     startTransition(async () => {
       await markAllNotificationsRead();
       router.refresh();
@@ -78,7 +133,7 @@ export default function NotificationsList({ items, unread }: { items: Notificati
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="glass-icon-button relative rounded-full p-2 text-ink hover:bg-surface-cream"
+        className="relative rounded-full p-2 text-ink hover:bg-surface-cream"
         aria-label="Notifications"
       >
         <Bell size={20} />
@@ -90,7 +145,7 @@ export default function NotificationsList({ items, unread }: { items: Notificati
       </button>
 
       {open && (
-        <div className="glass-popover absolute right-0 top-full z-30 mt-2 w-96 max-w-[92vw] overflow-hidden rounded-2xl border border-border-beige shadow-lg">
+        <div className="absolute right-0 top-full z-30 mt-2 w-96 max-w-[92vw] overflow-hidden rounded-2xl border border-border-beige bg-surface-card shadow-lg">
           <div className="flex items-center justify-between px-5 py-4">
             <span className="font-serif text-xl text-brand-green">Notifications</span>
             {unread > 0 && (

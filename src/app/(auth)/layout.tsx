@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import Navbar from '@/components/store/Navbar';
 import Footer from '@/components/store/Footer';
 import BrandMark from '@/components/store/BrandMark';
+import SiteLogoPattern from '@/components/site/SiteLogoPattern';
 
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
   const headersList = await headers();
@@ -16,6 +17,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
   if (onAdminHost) {
     return (
       <div className="auth-shell flex min-h-screen flex-col items-center justify-center px-6 py-16">
+        <SiteLogoPattern variant="auth" />
         <BrandMark className="mb-8 h-10" />
         {children}
       </div>
@@ -24,6 +26,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
 
   return (
     <div className="auth-shell flex min-h-screen flex-col">
+      <SiteLogoPattern variant="auth" />
       <Navbar userFullName={null} />
       <main className="auth-main flex-1">{children}</main>
       <Footer />

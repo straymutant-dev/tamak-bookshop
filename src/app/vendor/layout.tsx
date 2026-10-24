@@ -30,7 +30,7 @@ export default async function VendorLayout({ children }: { children: React.React
   if (profile?.role !== 'vendor') redirect(REDIRECT_BY_ROLE[profile?.role ?? 'client'] ?? '/');
 
   return (
-    <div className="flex min-h-screen flex-col bg-surface-cream">
+    <div className="flex min-h-screen flex-col">
       <Navbar userFullName={profile.full_name} userRole="vendor" notifications={<NotificationsPanel />} />
       <LiveRefresh tables={['orders', 'profiles', 'repayment_requests', 'credit_repayments', 'notifications']} />
       <NotificationToasts />
