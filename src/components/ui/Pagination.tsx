@@ -32,7 +32,7 @@ export default function Pagination({
   if (pageCount <= 1) return null;
 
   const buttonBase =
-    'flex h-9 min-w-9 items-center justify-center rounded-xl border px-2.5 text-sm tabular-nums disabled:pointer-events-none disabled:opacity-40';
+    'flex h-9 min-w-9 items-center justify-center rounded-xl border px-2.5 text-sm tabular-nums transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green disabled:pointer-events-none disabled:opacity-40';
 
   return (
     <nav aria-label="Pagination" className="flex items-center gap-1.5">
@@ -41,7 +41,7 @@ export default function Pagination({
         onClick={() => onPageChange(page - 1)}
         disabled={disabled || page <= 1}
         aria-label="Previous page"
-        className={`${buttonBase} border-border-beige bg-surface-card text-ink-muted hover:text-ink`}
+        className={`${buttonBase} border-border-beige bg-surface-card text-ink-muted hover:border-brand-green hover:bg-brand-green hover:text-white`}
       >
         <ChevronLeft size={16} aria-hidden="true" />
       </button>
@@ -62,7 +62,7 @@ export default function Pagination({
             className={`${buttonBase} ${
               item === page
                 ? 'border-brand-green bg-brand-green font-medium text-white'
-                : 'border-border-beige bg-surface-card text-ink-muted hover:text-ink'
+                : 'border-border-beige bg-surface-card text-ink-muted hover:border-brand-green hover:bg-brand-green hover:text-white'
             }`}
           >
             {item}
@@ -75,7 +75,7 @@ export default function Pagination({
         onClick={() => onPageChange(page + 1)}
         disabled={disabled || page >= pageCount}
         aria-label="Next page"
-        className={`${buttonBase} border-border-beige bg-surface-card text-ink-muted hover:text-ink`}
+        className={`${buttonBase} border-border-beige bg-surface-card text-ink-muted hover:border-brand-green hover:bg-brand-green hover:text-white`}
       >
         <ChevronRight size={16} aria-hidden="true" />
       </button>

@@ -8,7 +8,12 @@ import {
   ArrowUp,
   ArrowUpDown,
   BookOpen,
+  Boxes,
+  LoaderCircle,
+  Pencil,
+  RotateCcw,
   Search,
+  Trash2,
 } from "lucide-react";
 import type { Book, ClassLevel } from "@/lib/types";
 import { formatGHS } from "@/lib/currency";
@@ -501,36 +506,56 @@ export default function InventoryTable({
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex justify-end gap-3 text-xs">
+                    <div className="flex justify-end gap-1">
                       {book.is_active ? (
                         <>
                           <button
+                            type="button"
                             onClick={() => setStockBook(book)}
-                            className="text-brand-green"
+                            aria-label={`Adjust stock for ${book.title}`}
+                            title="Adjust stock"
+                            className="flex size-9 items-center justify-center rounded-lg text-brand-green transition-colors hover:bg-brand-green/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green"
                           >
-                            Adjust stock
+                            <Boxes size={17} aria-hidden="true" />
                           </button>
                           <button
+                            type="button"
                             onClick={() => setEditingBook(book)}
-                            className="text-accent-gold"
+                            aria-label={`Edit ${book.title}`}
+                            title="Edit book"
+                            className="flex size-9 items-center justify-center rounded-lg text-accent-gold transition-colors hover:bg-accent-gold/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-gold"
                           >
-                            Edit
+                            <Pencil size={16} aria-hidden="true" />
                           </button>
                           <button
+                            type="button"
                             onClick={() => handleDelete(book.id)}
                             disabled={deletingId === book.id}
-                            className="text-accent-terracotta disabled:opacity-50"
+                            aria-label={`${deletingId === book.id ? "Deleting" : "Delete"} ${book.title}`}
+                            title="Delete book"
+                            className="flex size-9 items-center justify-center rounded-lg text-accent-terracotta transition-colors hover:bg-accent-terracotta/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-terracotta disabled:cursor-wait disabled:opacity-50"
                           >
-                            {deletingId === book.id ? "Deleting…" : "Delete"}
+                            {deletingId === book.id ? (
+                              <LoaderCircle size={16} className="animate-spin" aria-hidden="true" />
+                            ) : (
+                              <Trash2 size={16} aria-hidden="true" />
+                            )}
                           </button>
                         </>
                       ) : (
                         <button
+                          type="button"
                           onClick={() => handleRestore(book.id)}
                           disabled={restoringId === book.id}
-                          className="text-brand-green disabled:opacity-50"
+                          aria-label={`${restoringId === book.id ? "Restoring" : "Restore"} ${book.title}`}
+                          title="Restore book"
+                          className="flex size-9 items-center justify-center rounded-lg text-brand-green transition-colors hover:bg-brand-green/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green disabled:cursor-wait disabled:opacity-50"
                         >
-                          {restoringId === book.id ? "Restoring…" : "Restore"}
+                          {restoringId === book.id ? (
+                            <LoaderCircle size={16} className="animate-spin" aria-hidden="true" />
+                          ) : (
+                            <RotateCcw size={16} aria-hidden="true" />
+                          )}
                         </button>
                       )}
                     </div>

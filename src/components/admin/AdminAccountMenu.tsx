@@ -82,18 +82,18 @@ export default function AdminAccountMenu({
                 href={`${accountHref}#profile`}
                 role="menuitem"
                 onClick={() => setOpen(false)}
-                className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm text-ink hover:bg-surface-cream focus-visible:outline-2 focus-visible:outline-brand-green"
+                className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm text-ink-muted transition-colors hover:bg-brand-green hover:text-white focus-visible:outline-2 focus-visible:outline-brand-green"
               >
-                <UserRound size={17} aria-hidden="true" className="text-ink-muted" />
+                <UserRound size={17} aria-hidden="true" className="text-current opacity-70" />
                 My Profile
               </Link>
               <Link
                 href={`${accountHref}#password`}
                 role="menuitem"
                 onClick={() => setOpen(false)}
-                className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm text-ink hover:bg-surface-cream focus-visible:outline-2 focus-visible:outline-brand-green"
+                className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm text-ink-muted transition-colors hover:bg-brand-green hover:text-white focus-visible:outline-2 focus-visible:outline-brand-green"
               >
-                <Settings size={17} aria-hidden="true" className="text-ink-muted" />
+                <Settings size={17} aria-hidden="true" className="text-current opacity-70" />
                 Account Settings
               </Link>
             </nav>

@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ShoppingBag, Menu } from 'lucide-react';
+import { ShoppingBag, PanelLeft } from 'lucide-react';
 import { useCart } from '@/lib/cart/CartContext';
 import BrandMark from './BrandMark';
 import { usePathname } from 'next/navigation';
@@ -54,7 +54,10 @@ export default function Navbar({
     }
   }
 
-  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  const isActive = (href: string) => {
+    const linkPath = new URL(href, 'https://tamak.local').pathname;
+    return pathname === linkPath || (linkPath !== '/' && pathname.startsWith(`${linkPath}/`));
+  };
 
   const NAV_LINKS = [
     ...accountLinks,
@@ -90,12 +93,17 @@ export default function Navbar({
           <BrandMark className="h-8 sm:h-9 md:h-10" />
         </Link>
 
-        <nav className="hidden items-center gap-5 text-sm text-ink md:flex lg:gap-8">
+        <nav className="hidden items-center gap-1 text-sm md:flex lg:gap-2">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className={`hover:text-brand-green ${isActive(link.href) ? 'font-medium text-brand-green' : ''}`}
+              aria-current={isActive(link.href) ? 'page' : undefined}
+              className={`flex min-h-10 items-center rounded-xl px-3 py-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green ${
+                isActive(link.href)
+                  ? 'bg-brand-green font-medium text-white shadow-sm'
+                  : 'text-ink-muted hover:bg-brand-green hover:text-white'
+              }`}
             >
               {link.label}
             </Link>
@@ -103,7 +111,14 @@ export default function Navbar({
         </nav>
 
         <div className="flex items-center gap-4">
-          <Link href={resolveHref('/store/cart')} className="relative text-ink hover:text-brand-green" aria-label="Cart">
+          <Link
+            href={resolveHref('/store/cart')}
+            aria-current={isActive('/store/cart') ? 'page' : undefined}
+            className={`relative flex h-10 w-10 items-center justify-center rounded-xl transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green ${
+              isActive('/store/cart') ? 'bg-brand-green text-white' : 'text-ink hover:bg-brand-green hover:text-white'
+            }`}
+            aria-label="Cart"
+          >
             <ShoppingBag size={22} strokeWidth={1.75} />
             {totalCount > 0 && (
               <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-accent-terracotta text-[10px] font-medium text-white">
@@ -121,14 +136,14 @@ export default function Navbar({
           ) : (
             <Link
               href="/auth/login"
-              className="hidden rounded-md border border-brand-sage px-4 py-2 text-sm text-ink hover:border-brand-green hover:text-brand-green md:block"
+              className="hidden rounded-xl border border-brand-sage px-4 py-2 text-sm text-ink transition-colors hover:border-brand-green hover:bg-brand-green hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green md:block"
             >
               Log in
             </Link>
           )}
 
           <button onClick={() => setMenuOpen(true)} className="text-ink md:hidden" aria-label="Open menu">
-            <Menu size={22} />
+            <PanelLeft size={22} />
           </button>
         </div>
       </div>
@@ -145,12 +160,17 @@ export default function Navbar({
           </div>
         )}
         
-        <nav className="flex flex-col gap-1 text-sm text-ink">
+        <nav className="flex flex-col gap-1 text-sm">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className={`py-2 ${isActive(link.href) ? 'font-medium text-brand-green' : ''}`}
+              aria-current={isActive(link.href) ? 'page' : undefined}
+              className={`flex min-h-10 items-center rounded-xl px-3 py-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green ${
+                isActive(link.href)
+                  ? 'bg-brand-green font-medium text-white shadow-sm'
+                  : 'text-ink-muted hover:bg-brand-green hover:text-white'
+              }`}
               onClick={() => setMenuOpen(false)}
             >
               {link.label}
@@ -161,7 +181,12 @@ export default function Navbar({
               <div className="my-2 border-t border-border-beige" />
               <Link
                 href={`/account/settings?from=${encodeURIComponent(pathname)}`}
-                className="py-2"
+                aria-current={isActive('/account/settings') ? 'page' : undefined}
+                className={`flex min-h-10 items-center rounded-xl px-3 py-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green ${
+                  isActive('/account/settings')
+                    ? 'bg-brand-green font-medium text-white shadow-sm'
+                    : 'text-ink-muted hover:bg-brand-green hover:text-white'
+                }`}
                 onClick={() => setMenuOpen(false)}
               >
                 Account settings
@@ -179,7 +204,16 @@ export default function Navbar({
           ) : (
             <>
               <div className="my-2 border-t border-border-beige" />
-              <Link href="/auth/login" className="py-2 font-medium text-brand-green" onClick={() => setMenuOpen(false)}>
+              <Link
+                href="/auth/login"
+                aria-current={isActive('/auth/login') ? 'page' : undefined}
+                className={`flex min-h-10 items-center rounded-xl px-3 py-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green ${
+                  isActive('/auth/login')
+                    ? 'bg-brand-green font-medium text-white shadow-sm'
+                    : 'text-ink-muted hover:bg-brand-green hover:text-white'
+                }`}
+                onClick={() => setMenuOpen(false)}
+              >
                 Log in
               </Link>
             </>

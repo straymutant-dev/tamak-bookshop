@@ -45,8 +45,7 @@ export default function Hero() {
           </div>
         </div>
 
-        <div className="home-hero__art" aria-label="Students learning with books">
-          <div className="home-hero__art-orbit" aria-hidden="true" />
+        <div className="home-hero__art" aria-label="Featured Tamak Series Mathematics textbook">
           <div className="home-hero__image">
             <HeroImage />
           </div>

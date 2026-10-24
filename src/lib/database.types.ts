@@ -67,8 +67,11 @@ export type Database = {
           is_active: boolean
           low_stock_threshold: number
           stock_quantity: number
+          status: string
           subject: string | null
           title: string
+          last_edited_at: string | null
+          last_edited_by: string | null
           updated_at: string
           vendor_price_pesewas: number
         }
@@ -86,8 +89,11 @@ export type Database = {
           is_active?: boolean
           low_stock_threshold?: number
           stock_quantity?: number
+          status?: string
           subject?: string | null
           title: string
+          last_edited_at?: string | null
+          last_edited_by?: string | null
           updated_at?: string
           vendor_price_pesewas: number
         }
@@ -105,12 +111,60 @@ export type Database = {
           is_active?: boolean
           low_stock_threshold?: number
           stock_quantity?: number
+          status?: string
           subject?: string | null
           title?: string
+          last_edited_at?: string | null
+          last_edited_by?: string | null
           updated_at?: string
           vendor_price_pesewas?: number
         }
         Relationships: []
+      }
+      book_changes: {
+        Row: {
+          action: string
+          book_id: string
+          changed_at: string
+          changed_by: string | null
+          changes: Json
+          id: string
+          note: string | null
+        }
+        Insert: {
+          action: string
+          book_id: string
+          changed_at?: string
+          changed_by?: string | null
+          changes?: Json
+          id?: string
+          note?: string | null
+        }
+        Update: {
+          action?: string
+          book_id?: string
+          changed_at?: string
+          changed_by?: string | null
+          changes?: Json
+          id?: string
+          note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_changes_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_changes_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cashier_shifts: {
         Row: {

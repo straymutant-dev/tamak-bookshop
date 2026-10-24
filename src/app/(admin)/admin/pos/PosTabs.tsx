@@ -3,18 +3,18 @@ import Link from 'next/link';
 
 export default function PosTabs({ active }: { active: 'retail' | 'vendor' }) {
   const tabClass = (isActive: boolean) =>
-    `border-b-2 px-4 py-2 text-sm ${
-      isActive ? 'border-brand-green font-medium text-brand-green' : 'border-transparent text-ink-muted hover:text-ink'
+    `rounded-xl px-4 py-2 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green ${
+      isActive ? 'bg-brand-green font-medium text-white shadow-sm' : 'text-ink-muted hover:bg-brand-green hover:text-white'
     }`;
 
   return (
-    <div className="mb-6 flex gap-2 border-b border-border-beige">
-      <Link href="/admin/pos" className={tabClass(active === 'retail')}>
+    <nav aria-label="Point of sale" className="mb-6 flex gap-1">
+      <Link href="/admin/pos" aria-current={active === 'retail' ? 'page' : undefined} className={tabClass(active === 'retail')}>
         Retail sale
       </Link>
-      <Link href="/admin/pos/vendor" className={tabClass(active === 'vendor')}>
+      <Link href="/admin/pos/vendor" aria-current={active === 'vendor' ? 'page' : undefined} className={tabClass(active === 'vendor')}>
         Vendor sale
       </Link>
-    </div>
+    </nav>
   );
 }

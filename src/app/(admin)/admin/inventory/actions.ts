@@ -6,33 +6,22 @@ import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { ghsToPesewas } from '@/lib/currency';
 import { CLASS_LEVELS, type ClassLevel } from '@/lib/types';
 import type { Json } from '@/lib/database.types';
-
-// Fields whose changes are written to the audit trail when a book is edited.
-const AUDITED_FIELDS = [
-  'title',
-  'author',
-  'category',
-  'subject',
-  'class_level',
-  'academic_year',
-  'buying_cost_pesewas',
-  'customer_price_pesewas',
-  'vendor_price_pesewas',
-] as const;
-
-function diffBook(before: Record<string, unknown>, after: Record<string, unknown>) {
-  const changes: Record<string, Json> = {};
-  for (const key of AUDITED_FIELDS) {
-    if (after[key] === undefined) continue; // not submitted, so left unchanged
-    if (before[key] !== after[key]) {
-      changes[key] = { from: (before[key] ?? null) as Json, to: (after[key] ?? null) as Json };
-    }
-  }
-  return changes;
-}
+import type { ChangeSet } from '@/lib/bookChanges';
 
 function isClassLevel(value: string): value is ClassLevel {
   return (CLASS_LEVELS as readonly string[]).includes(value);
+}
+
+async function assertStaffOrAdmin() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+  if (profile?.role !== 'admin' && profile?.role !== 'staff') throw new Error('Staff or admin access required');
+  return user.id;
 }
 
 async function assertAdmin() {
@@ -56,7 +45,7 @@ async function uploadCoverIfProvided(bookId: string, file: File | null) {
   if (!file || file.size === 0) return undefined;
 
   const service = createServiceRoleClient();
-  const ext = file.name.split('.').pop() || 'jpg';
+  const ext = COVER_EXTENSION_BY_TYPE[file.type] || file.name.split('.').pop() || 'jpg';
   const path = `${bookId}/${Date.now()}.${ext}`;
 
   const { error } = await service.storage.from('book-covers').upload(path, file, {
@@ -94,7 +83,6 @@ function readBookFields(formData: FormData) {
     // tampered value falls back to "leave unset" rather than being sent raw.
     class_level: rawClassLevel && isClassLevel(rawClassLevel) ? rawClassLevel : undefined,
     academic_year: String(formData.get('academic_year') ?? '').trim() || undefined,
-    // undefined = let the DB default (5) apply on insert, or leave unchanged on update
     buying_cost_pesewas: ghsToPesewas(Number(formData.get('buying_cost') ?? 0)),
     customer_price_pesewas: ghsToPesewas(Number(formData.get('customer_price') ?? 0)),
     vendor_price_pesewas: ghsToPesewas(Number(formData.get('vendor_price') ?? 0)),
@@ -127,30 +115,16 @@ export async function createBook(formData: FormData) {
   assertRequiredBookFields(fields);
   const stockQuantity = Number(formData.get('stock_quantity') ?? 0);
 
-  const { data: book, error } = await supabase
+  // Upload the cover first, under an id made in advance, so the book is saved in ONE insert.
+  // (Insert-then-attach-cover would record a second edit and mark a brand-new book as Updated.)
+  const bookId = crypto.randomUUID();
+  const coverUrl = await uploadCoverIfProvided(bookId, formData.get('cover') as File | null);
+
+  const { error } = await supabase
     .from('books')
-    .insert({ ...fields, stock_quantity: stockQuantity })
-    .select('id')
-    .single();
+    .insert({ id: bookId, ...fields, stock_quantity: stockQuantity, ...(coverUrl ? { cover_image_url: coverUrl } : {}) });
 
-  if (error || !book) throw new Error(error?.message ?? 'Failed to create book');
-
-  const coverFile = formData.get('cover') as File | null;
-  const coverUrl = await uploadCoverIfProvided(book.id, coverFile);
-
-  if (coverUrl) {
-    const { error: coverError } = await supabase
-      .from('books')
-      .update({ cover_image_url: coverUrl })
-      .eq('id', book.id);
-    if (coverError) throw new Error(`Book saved, but cover failed to attach: ${coverError.message}`);
-  }
-
-  await logAudit('book_created', book.id, {
-    title: fields.title,
-    stock_quantity: stockQuantity,
-    customer_price_pesewas: fields.customer_price_pesewas,
-  });
+  if (error) throw new Error(error.message);
 
   revalidatePath('/admin/inventory');
 }
@@ -160,8 +134,6 @@ export async function updateBook(bookId: string, formData: FormData) {
   const supabase = await createClient();
   const fields = readBookFields(formData);
   assertRequiredBookFields(fields);
-
-  const { data: before } = await supabase.from('books').select('*').eq('id', bookId).single();
 
   const coverFile = formData.get('cover') as File | null;
   const coverUrl = await uploadCoverIfProvided(bookId, coverFile);
@@ -173,63 +145,69 @@ export async function updateBook(bookId: string, formData: FormData) {
 
   if (error) throw new Error(error.message);
 
-  const changes = before ? diffBook(before, fields) : {};
-  if (coverUrl) changes.cover_image = 'replaced';
-  if (Object.keys(changes).length > 0) {
-    await logAudit('book_updated', bookId, { title: fields.title, changes });
-  }
-
   revalidatePath('/admin/inventory');
 }
 
 export async function deleteBook(bookId: string) {
   await assertAdmin();
   const supabase = await createClient();
-  const { data: book } = await supabase.from('books').select('title').eq('id', bookId).single();
   const { error } = await supabase.from('books').update({ is_active: false }).eq('id', bookId);
   if (error) throw new Error(error.message);
-  await logAudit('book_archived', bookId, { title: book?.title ?? null });
   revalidatePath('/admin/inventory');
 }
 
 export async function restoreBook(bookId: string) {
   await assertAdmin();
   const supabase = await createClient();
-  const { data: book } = await supabase.from('books').select('title').eq('id', bookId).single();
   const { error } = await supabase.from('books').update({ is_active: true }).eq('id', bookId);
   if (error) throw new Error(error.message);
-  await logAudit('book_restored', bookId, { title: book?.title ?? null });
   revalidatePath('/admin/inventory');
 }
 
-/** Delete (archive) or restore several books at once. Admin only; every book gets its own audit entry. */
+/** Archive or restore several books at once. The database trigger records each book's history. */
 export async function bulkSetBooksActive(bookIds: string[], active: boolean) {
-  const userId = await assertAdmin();
+  await assertAdmin();
 
   const ids = Array.from(new Set(bookIds)).filter((id) => /^[0-9a-fA-F-]{36}$/.test(id));
   if (ids.length === 0) throw new Error('No books selected');
   if (ids.length > 200) throw new Error('Select 200 books or fewer at a time');
 
   const supabase = await createClient();
-
-  const { data: books, error: readError } = await supabase.from('books').select('id, title').in('id', ids);
-  if (readError) throw new Error(readError.message);
-
   const { error } = await supabase.from('books').update({ is_active: active }).in('id', ids);
   if (error) throw new Error(error.message);
 
-  const { error: auditError } = await supabase.from('audit_logs').insert(
-    (books ?? []).map((book) => ({
-      staff_id: userId,
-      action: active ? 'book_restored' : 'book_archived',
-      entity_type: 'books',
-      entity_id: book.id,
-      details_json: { title: book.title, bulk: true } as Json,
-    }))
-  );
-  if (auditError) console.error('audit log insert failed:', auditError.message);
-
   revalidatePath('/admin/inventory');
+}
+
+// Catalogue edits are recorded by a database trigger (migration 42). Manual stock moves are not (every sale
+// changes stock), so they are written to the book's history here.
+async function logBookChange(
+  bookId: string,
+  action: 'stock_intake' | 'stock_writeoff' | 'stock_returned_to_publisher',
+  changes: ChangeSet,
+  note: string | null
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const changesJson = (Object.entries(changes) as [string, { before: Json; after: Json }][]).reduce<Record<string, Json | undefined>>(
+    (result, [field, change]) => {
+      result[field] = { before: change.before, after: change.after };
+      return result;
+    },
+    {}
+  );
+
+  const { error } = await supabase.from('book_changes').insert({
+    book_id: bookId,
+    changed_by: user?.id ?? null,
+    action,
+    changes: changesJson,
+    note,
+  });
+  if (error) console.error('book change log insert failed:', error.message);
 }
 
 async function logAudit(action: string, bookId: string, details: Record<string, Json>) {
@@ -260,7 +238,7 @@ export async function intakeStock(formData: FormData) {
   const supabase = await createClient();
   const { data: book, error: fetchError } = await supabase
     .from('books')
-    .select('stock_quantity, title')
+    .select('stock_quantity')
     .eq('id', bookId)
     .single();
 
@@ -273,7 +251,13 @@ export async function intakeStock(formData: FormData) {
 
   if (error) throw new Error(error.message);
 
-  await logAudit('stock_intake', bookId, { title: book.title, quantity, note });
+  await logBookChange(
+    bookId,
+    'stock_intake',
+    { stock_quantity: { before: book.stock_quantity, after: book.stock_quantity + quantity } },
+    note.trim() || null
+  );
+  await logAudit('stock_intake', bookId, { quantity, note });
   revalidatePath('/admin/inventory');
 }
 
@@ -289,7 +273,7 @@ export async function writeOffStock(formData: FormData) {
   const supabase = await createClient();
   const { data: book, error: fetchError } = await supabase
     .from('books')
-    .select('stock_quantity, damaged_quantity, title')
+    .select('stock_quantity, damaged_quantity')
     .eq('id', bookId)
     .single();
 
@@ -306,6 +290,124 @@ export async function writeOffStock(formData: FormData) {
 
   if (error) throw new Error(error.message);
 
-  await logAudit('stock_writeoff', bookId, { title: book.title, quantity, reason });
+  await logBookChange(
+    bookId,
+    'stock_writeoff',
+    {
+      stock_quantity: { before: book.stock_quantity, after: book.stock_quantity - quantity },
+      damaged_quantity: { before: book.damaged_quantity, after: book.damaged_quantity + quantity },
+    },
+    reason
+  );
+  await logAudit('stock_writeoff', bookId, { quantity, reason });
+  revalidatePath('/admin/inventory');
+}
+
+export async function returnStockToPublisher(formData: FormData) {
+  await assertAdmin();
+  const bookId = String(formData.get('bookId') ?? '');
+  const quantity = Number(formData.get('quantity') ?? 0);
+  const note = String(formData.get('note') ?? '').trim();
+
+  if (!bookId || !Number.isInteger(quantity) || quantity <= 0) {
+    throw new Error('Provide a book and a positive whole-number quantity');
+  }
+
+  const supabase = await createClient();
+  const { data: book, error: fetchError } = await supabase
+    .from('books')
+    .select('stock_quantity')
+    .eq('id', bookId)
+    .single();
+
+  if (fetchError || !book) throw new Error(fetchError?.message ?? 'Book not found');
+  if (book.stock_quantity < quantity) throw new Error('Cannot return more than current stock');
+
+  const { error } = await supabase
+    .from('books')
+    .update({ stock_quantity: book.stock_quantity - quantity })
+    .eq('id', bookId);
+
+  if (error) throw new Error(error.message);
+
+  await logBookChange(
+    bookId,
+    'stock_returned_to_publisher',
+    { stock_quantity: { before: book.stock_quantity, after: book.stock_quantity - quantity } },
+    note || null
+  );
+  await logAudit('stock_returned_to_publisher', bookId, { quantity, note });
+  revalidatePath('/admin/inventory');
+}
+
+export interface BookHistoryEntry {
+  id: string;
+  action: string;
+  changedAt: string;
+  editor: string | null;
+  changes: ChangeSet;
+  note: string | null;
+}
+
+function parseChangeSet(value: Json): ChangeSet {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new Error('Invalid book change history data');
+  }
+
+  const changes: ChangeSet = {};
+  for (const [field, change] of Object.entries(value)) {
+    if (
+      typeof change !== 'object' ||
+      change === null ||
+      Array.isArray(change) ||
+      !('before' in change) ||
+      !('after' in change) ||
+      change.before === undefined ||
+      change.after === undefined
+    ) {
+      throw new Error('Invalid book change history data');
+    }
+    changes[field] = { before: change.before, after: change.after };
+  }
+  return changes;
+}
+
+/** The most recent changes to one book, newest first, with the name of whoever made each one. */
+export async function getBookHistory(bookId: string): Promise<BookHistoryEntry[]> {
+  await assertStaffOrAdmin();
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('book_changes')
+    .select('id, action, changed_at, changed_by, changes, note')
+    .eq('book_id', bookId)
+    .order('changed_at', { ascending: false })
+    .limit(100);
+  if (error) throw new Error(error.message);
+
+  const rows = data ?? [];
+  const editorIds = Array.from(new Set(rows.map((r) => r.changed_by).filter((id): id is string => !!id)));
+  const names = new Map<string, string>();
+  if (editorIds.length > 0) {
+    const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', editorIds);
+    for (const p of profiles ?? []) names.set(p.id, p.full_name ?? 'Unknown');
+  }
+
+  return rows.map((r) => ({
+    id: r.id,
+    action: r.action,
+    changedAt: r.changed_at,
+    editor: r.changed_by ? (names.get(r.changed_by) ?? 'Unknown') : null,
+    changes: parseChangeSet(r.changes),
+    note: r.note,
+  }));
+}
+
+/** An admin has looked at an edited book: clear its "Updated" marker. The trigger records this in the history. */
+export async function markBookReviewed(bookId: string) {
+  await assertAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase.from('books').update({ status: 'published' }).eq('id', bookId).eq('status', 'updated');
+  if (error) throw new Error(error.message);
   revalidatePath('/admin/inventory');
 }

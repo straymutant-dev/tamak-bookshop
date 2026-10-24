@@ -3,11 +3,11 @@
 
 import { useState, useTransition } from 'react';
 import type { Book } from '@/lib/types';
-import { intakeStock, writeOffStock } from './actions';
+import { intakeStock, returnStockToPublisher, writeOffStock } from './actions';
 import { useToast } from '@/components/ui/ToastContext';
 
 export default function StockAdjustModal({ book, onClose }: { book: Book; onClose: () => void }) {
-  const [mode, setMode] = useState<'intake' | 'writeoff'>('intake');
+  const [mode, setMode] = useState<'intake' | 'writeoff' | 'return'>('intake');
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const { showToast } = useToast();
@@ -18,8 +18,15 @@ export default function StockAdjustModal({ book, onClose }: { book: Book; onClos
     startTransition(async () => {
       try {
         if (mode === 'intake') await intakeStock(formData);
-        else await writeOffStock(formData);
-        showToast(mode === 'intake' ? 'Stock added successfully' : 'Stock written off successfully');
+        else if (mode === 'writeoff') await writeOffStock(formData);
+        else await returnStockToPublisher(formData);
+        showToast(
+          mode === 'intake'
+            ? 'Stock added successfully'
+            : mode === 'writeoff'
+              ? 'Stock written off successfully'
+              : 'Stock returned to publisher'
+        );
         onClose();
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong');
@@ -35,24 +42,36 @@ export default function StockAdjustModal({ book, onClose }: { book: Book; onClos
           {book.title} — currently {book.stock_quantity} in stock
         </p>
 
-        <div className="mb-4 flex rounded-md border border-brand-sage p-1">
+        <div className="mb-4 grid grid-cols-3 rounded-md border border-brand-sage p-1">
           <button
             type="button"
             onClick={() => setMode('intake')}
-            className={`flex-1 rounded px-3 py-2 text-sm font-medium ${
+            aria-pressed={mode === 'intake'}
+            className={`rounded px-2 py-2 text-xs font-medium sm:text-sm ${
               mode === 'intake' ? 'bg-brand-green text-white' : 'text-ink'
             }`}
           >
-            Stock intake
+            Add stock
           </button>
           <button
             type="button"
             onClick={() => setMode('writeoff')}
-            className={`flex-1 rounded px-3 py-2 text-sm font-medium ${
+            aria-pressed={mode === 'writeoff'}
+            className={`rounded px-2 py-2 text-xs font-medium sm:text-sm ${
               mode === 'writeoff' ? 'bg-accent-terracotta text-white' : 'text-ink'
             }`}
           >
-            Damaged write-off
+            Write off
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('return')}
+            aria-pressed={mode === 'return'}
+            className={`rounded px-2 py-2 text-xs font-medium sm:text-sm ${
+              mode === 'return' ? 'bg-accent-terracotta text-white' : 'text-ink'
+            }`}
+          >
+            Return to publisher
           </button>
         </div>
 
@@ -77,7 +96,7 @@ export default function StockAdjustModal({ book, onClose }: { book: Book; onClos
               Note (optional)
               <input name="note" className="rounded-md border border-brand-sage px-3 py-2" />
             </label>
-          ) : (
+          ) : mode === 'writeoff' ? (
             <label className="flex flex-col gap-1 text-sm">
               Reason
               <input
@@ -87,6 +106,20 @@ export default function StockAdjustModal({ book, onClose }: { book: Book; onClos
                 className="rounded-md border border-brand-sage px-3 py-2"
               />
             </label>
+          ) : (
+            <>
+              <p className="text-xs text-ink-muted">
+                Returned copies will be removed from available stock.
+              </p>
+              <label className="flex flex-col gap-1 text-sm">
+                Note (optional)
+                <input
+                  name="note"
+                  placeholder="Return reference or details"
+                  className="rounded-md border border-brand-sage px-3 py-2"
+                />
+              </label>
+            </>
           )}
 
           <div className="mt-2 flex justify-end gap-3">

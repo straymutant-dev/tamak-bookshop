@@ -33,10 +33,29 @@ export default async function AdminDashboardPage() {
 
   const todayStart = new Date();
   todayStart.setUTCHours(0, 0, 0, 0);
-  const trendStart = new Date(todayStart);
-  trendStart.setUTCDate(trendStart.getUTCDate() - 6);
+  const trendStart = new Date(Date.UTC(todayStart.getUTCFullYear(), todayStart.getUTCMonth() - 11, 1));
   const tomorrowStart = new Date(todayStart);
   tomorrowStart.setUTCDate(tomorrowStart.getUTCDate() + 1);
+
+  const trendOrdersPromise = (async () => {
+    const rows: { total_pesewas: number; created_at: string }[] = [];
+    const pageSize = 1000;
+
+    for (let offset = 0; ; offset += pageSize) {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('total_pesewas, created_at')
+        .gte('created_at', trendStart.toISOString())
+        .lt('created_at', tomorrowStart.toISOString())
+        .order('created_at', { ascending: true })
+        .order('id', { ascending: true })
+        .range(offset, offset + pageSize - 1);
+
+      if (error) return { data: null, error };
+      rows.push(...(data ?? []));
+      if (!data || data.length < pageSize) return { data: rows, error: null };
+    }
+  })();
 
   const [
     { count: activeBooksCount },
@@ -48,11 +67,7 @@ export default async function AdminDashboardPage() {
     await Promise.all([
       supabase.from('books').select('id', { count: 'exact', head: true }).eq('is_active', true),
       supabase.rpc('low_stock_count'),
-      supabase
-        .from('orders')
-        .select('total_pesewas, created_at')
-        .gte('created_at', trendStart.toISOString())
-        .lt('created_at', tomorrowStart.toISOString()),
+      trendOrdersPromise,
       isAdmin
         ? supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'vendor').eq('vendor_status', 'pending')
         : Promise.resolve({ count: 0 }),

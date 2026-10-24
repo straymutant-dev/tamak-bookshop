@@ -4,7 +4,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';import MobileDrawer from '@/components/ui/MobileDrawer';
+import { usePathname } from 'next/navigation';
+import MobileDrawer from '@/components/ui/MobileDrawer';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import UserAvatar from '@/components/ui/UserAvatar';
 import { signOutAction } from '@/lib/actions/auth';
@@ -32,6 +33,7 @@ export default function UserMenuDrawer({
 }) {
   const [confirmingLogout, setConfirmingLogout] = useState(false);
   const pathname = usePathname();
+  const isActive = (href: string) => pathname === href || (href !== '/' && pathname.startsWith(`${href}/`));
 
   return (
     <>
@@ -41,15 +43,34 @@ export default function UserMenuDrawer({
           <span className="text-sm font-medium text-ink">{fullName}</span>
         </div>
 
-        <nav className="flex flex-col gap-1 text-sm text-ink">
+        <nav className="flex flex-col gap-1 text-sm">
           {extraItems.map((item) => (
-            <Link key={item.href} href={item.href} className="py-2" onClick={onClose}>
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={isActive(item.href) ? 'page' : undefined}
+              className={`flex min-h-10 items-center rounded-xl px-3 py-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green ${
+                isActive(item.href)
+                  ? 'bg-brand-green font-medium text-white shadow-sm'
+                  : 'text-ink-muted hover:bg-brand-green hover:text-white'
+              }`}
+              onClick={onClose}
+            >
               {item.label}
             </Link>
           ))}
           {extraItems.length > 0 && <div className="my-2 border-t border-border-beige" />}
 
-          <Link href={`/account/settings?from=${encodeURIComponent(pathname)}`} className="py-2" onClick={onClose}>
+          <Link
+            href={`/account/settings?from=${encodeURIComponent(pathname)}`}
+            aria-current={isActive('/account/settings') ? 'page' : undefined}
+            className={`flex min-h-10 items-center rounded-xl px-3 py-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green ${
+              isActive('/account/settings')
+                ? 'bg-brand-green font-medium text-white shadow-sm'
+                : 'text-ink-muted hover:bg-brand-green hover:text-white'
+            }`}
+            onClick={onClose}
+          >
             Account settings
           </Link>
 

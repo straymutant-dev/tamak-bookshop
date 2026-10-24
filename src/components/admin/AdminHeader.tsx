@@ -122,10 +122,10 @@ export default function AdminHeader({
                         key={link.href}
                         href={link.href}
                         aria-current={active ? 'page' : undefined}
-                        className={`flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 transition-colors ${
+                        className={`flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green ${
                           active
-                            ? 'bg-brand-green/10 font-medium text-brand-green'
-                            : 'text-ink-muted hover:bg-surface-cream hover:text-ink'
+                            ? 'bg-brand-green font-medium text-white shadow-sm'
+                            : 'text-ink-muted hover:bg-brand-green hover:text-white'
                         }`}
                       >
                         <Icon size={17} aria-hidden="true" />
@@ -142,7 +142,7 @@ export default function AdminHeader({
         <div className="mt-4 border-t border-border-beige pt-4">
           <button
             onClick={openStorefront}
-            className="mb-2 flex min-h-10 w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm text-ink-muted hover:bg-surface-cream hover:text-ink"
+            className="mb-2 flex min-h-10 w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm text-ink-muted transition-colors hover:bg-brand-green hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green"
           >
             <Store size={17} aria-hidden="true" />
             Open storefront
@@ -150,10 +150,11 @@ export default function AdminHeader({
           </button>
           <Link
             href="/account/settings"
-            className={`flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-sm ${
+            aria-current={isActive('/account/settings') ? 'page' : undefined}
+            className={`flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green ${
               isActive('/account/settings')
-                ? 'bg-brand-green/10 font-medium text-brand-green'
-                : 'text-ink-muted hover:bg-surface-cream hover:text-ink'
+                ? 'bg-brand-green font-medium text-white shadow-sm'
+                : 'text-ink-muted hover:bg-brand-green hover:text-white'
             }`}
           >
             <Settings size={17} aria-hidden="true" />
@@ -175,12 +176,18 @@ export default function AdminHeader({
             <Link href="/admin/dashboard" className="flex shrink-0 items-center lg:hidden">
               <BrandMark className="h-8" />
             </Link>
-            <button onClick={openStorefront} className="hidden text-sm text-ink-muted hover:text-brand-green sm:block lg:hidden">
+            <button
+              onClick={openStorefront}
+              className="hidden rounded-lg px-3 py-2 text-sm text-ink-muted transition-colors hover:bg-brand-green hover:text-white sm:block lg:hidden"
+            >
               Open storefront ↗
             </button>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={openStorefront} className="hidden text-sm text-ink-muted hover:text-brand-green lg:block">
+            <button
+              onClick={openStorefront}
+              className="hidden rounded-lg px-3 py-2 text-sm text-ink-muted transition-colors hover:bg-brand-green hover:text-white lg:block"
+            >
               Open storefront ↗
             </button>
             <button
@@ -226,8 +233,8 @@ export default function AdminHeader({
                 key={link.href}
                 href={link.href}
                 aria-current={active ? 'page' : undefined}
-                className={`flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 ${
-                  active ? 'bg-brand-green/10 font-medium text-brand-green' : 'text-ink'
+                className={`flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green ${
+                  active ? 'bg-brand-green font-medium text-white shadow-sm' : 'text-ink hover:bg-brand-green hover:text-white'
                 }`}
                 onClick={() => setMenuOpen(false)}
               >
@@ -242,14 +249,14 @@ export default function AdminHeader({
               setMenuOpen(false);
               openStorefront();
             }}
-            className="flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-left text-ink-muted"
+            className="flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-left text-ink-muted transition-colors hover:bg-brand-green hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green"
           >
             <Store size={17} aria-hidden="true" />
             Open storefront ↗
           </button>
           {fullName && (
             <>
-              <Link href="/account/settings" className="flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-ink-muted" onClick={() => setMenuOpen(false)}>
+              <Link href="/account/settings" aria-current={isActive('/account/settings') ? 'page' : undefined} className={`flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green ${isActive('/account/settings') ? 'bg-brand-green font-medium text-white shadow-sm' : 'text-ink-muted hover:bg-brand-green hover:text-white'}`} onClick={() => setMenuOpen(false)}>
                 <Settings size={17} aria-hidden="true" />
                 Account settings
               </Link>
