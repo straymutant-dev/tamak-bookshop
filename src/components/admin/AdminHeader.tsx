@@ -29,6 +29,7 @@ import { signOutAction } from '@/lib/actions/auth';
 import OfflineSyncRunner from '@/components/admin/OfflineSyncRunner';
 import { useUnsentSalesCount } from '@/lib/offline/hooks';
 import { syncOutbox } from '@/lib/offline/sync';
+import { getPortalHosts } from '@/lib/portalHosts';
 
 const ALL_LINKS: {
   label: string;
@@ -91,8 +92,8 @@ export default function AdminHeader({
 
   function openStorefront() {
     const { protocol, hostname, port } = window.location;
-    const rootHost = hostname.startsWith('admin.') ? hostname.slice('admin.'.length) : hostname;
-    const url = `${protocol}//${rootHost}${port ? `:${port}` : ''}/`;
+    const { mainHostFor } = getPortalHosts(hostname);
+    const url = `${protocol}//${mainHostFor}${port ? `:${port}` : ''}/`;
     window.open(url, '_blank', 'noopener,noreferrer');
   }
 

@@ -8,6 +8,7 @@ import Footer from '@/components/store/Footer';
 import LiveRefresh from '@/components/ui/LiveRefresh';
 import NotificationToasts from '@/components/notifications/NotificationToasts';
 import NotificationsPanel from '@/components/notifications/NotificationsPanel';
+import { getPortalHosts } from '@/lib/portalHosts';
 
 export const metadata: Metadata = {
   title: 'Staff portal',
@@ -17,7 +18,7 @@ export const metadata: Metadata = {
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const headersList = await headers();
   const host = headersList.get('host') ?? '';
-  const rootHost = host.startsWith('admin.') ? host.slice('admin.'.length) : host;
+  const { mainHostFor: rootHost } = getPortalHosts(host);
   const protocol = host.includes('localhost') ? 'http' : 'https';
   const crossHostBase = `${protocol}://${rootHost}`;
 

@@ -4,12 +4,12 @@ import { createClient } from '@/lib/supabase/server';
 import Navbar from '@/components/store/Navbar';
 import Footer from '@/components/store/Footer';
 import AdminHeader from '@/components/admin/AdminHeader';
+import { getPortalHosts } from '@/lib/portalHosts';
 
 export default async function AboutLayout({ children }: { children: React.ReactNode }) {
   const headersList = await headers();
   const host = headersList.get('host') ?? '';
-  const onAdminHost = host.startsWith('admin.');
-  const rootHost = onAdminHost ? host.slice('admin.'.length) : host;
+  const { onAdminHost, mainHostFor: rootHost } = getPortalHosts(host);
   const protocol = host.includes('localhost') ? 'http' : 'https';
   const crossHostBase = onAdminHost ? `${protocol}://${rootHost}` : undefined;
 

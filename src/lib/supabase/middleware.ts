@@ -3,6 +3,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { sessionCookieOptions } from './cookieOptions';
+import { getPortalHosts } from '@/lib/portalHosts';
 
 type Role = 'client' | 'vendor' | 'staff' | 'admin';
 
@@ -99,22 +100,8 @@ export async function updateSession(request: NextRequest) {
     console.warn('[auth] getUser failed:', authError.name, '-', authError.message);
   }
 
-  const hostname = (request.headers.get('host') ?? request.nextUrl.hostname).split(':')[0];
-
-  // TEMPORARY, for testing the admin portal on free *.vercel.app addresses before
-  // the real domain is live — two unrelated vercel.app hostnames can't relate to
-  // each other via an "admin." prefix the way admin.tamakbookshop.com does, so
-  // this pair of env vars lets the middleware treat one specific hostname as the
-  // admin host and know the other is its "main" counterpart. Unset in production;
-  // remove this block entirely once the real domain is in use.
-  const ADMIN_TEST_HOST = process.env.NEXT_PUBLIC_ADMIN_TEST_HOST;
-  const SITE_TEST_HOST = process.env.NEXT_PUBLIC_SITE_TEST_HOST;
-  const isTestHostPair = Boolean(ADMIN_TEST_HOST && SITE_TEST_HOST);
-
-  const onAdminHost = hostname.startsWith('admin.') || (isTestHostPair && hostname === ADMIN_TEST_HOST);
-  const rootDomain = hostname.startsWith('admin.') ? hostname.slice('admin.'.length) : hostname;
-  const adminHostFor = isTestHostPair ? ADMIN_TEST_HOST! : `admin.${rootDomain}`;
-  const mainHostFor = isTestHostPair ? SITE_TEST_HOST! : rootDomain;
+  const hostname = request.headers.get('host') ?? request.nextUrl.hostname;
+  const { onAdminHost, adminHostFor, mainHostFor } = getPortalHosts(hostname);
   const originalPath = request.nextUrl.pathname;
 
   let profile: Profile | null = null;
@@ -152,20 +139,12 @@ export async function updateSession(request: NextRequest) {
     else effectivePath = `/admin${originalPath}`;
   }
 
-  // Already-authenticated staff/admin skip the admin-host login form.
-  if (!onAdminHost && originalPath === '/auth/login' && profile && (profile.role === 'admin' || profile.role === 'staff')) {
-    const target = request.nextUrl.clone();
-    target.hostname = adminHostFor;
-    target.pathname = '/inventory';
-    return NextResponse.redirect(target);
-  }
-
   // Staff/admin shouldn't authenticate via the main-host login at all —
   // send them to the admin host instead (the actual hard-block on a
   // mismatched role lives in each login form's own server action).
   if (!onAdminHost && originalPath === '/auth/login' && profile && (profile.role === 'admin' || profile.role === 'staff')) {
     const target = request.nextUrl.clone();
-    target.hostname = `admin.${rootDomain}`;
+    target.hostname = adminHostFor;
     target.pathname = '/inventory';
     return NextResponse.redirect(target);
   }

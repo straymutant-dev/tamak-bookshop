@@ -4,11 +4,12 @@ import Navbar from '@/components/store/Navbar';
 import Footer from '@/components/store/Footer';
 import BrandMark from '@/components/store/BrandMark';
 import SiteLogoPattern from '@/components/site/SiteLogoPattern';
+import { getPortalHosts } from '@/lib/portalHosts';
 
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
   const headersList = await headers();
   const host = headersList.get('host') ?? '';
-  const onAdminHost = host.startsWith('admin.');
+  const { onAdminHost } = getPortalHosts(host);
 
   // The admin-portal sign-in page lives on a different host, where the
   // storefront Navbar's /store-style links can't resolve without the same

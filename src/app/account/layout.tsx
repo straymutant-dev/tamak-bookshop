@@ -7,12 +7,12 @@ import AdminHeader from '@/components/admin/AdminHeader';
 import LiveRefresh from '@/components/ui/LiveRefresh';
 import NotificationToasts from '@/components/notifications/NotificationToasts';
 import NotificationsPanel from '@/components/notifications/NotificationsPanel';
+import { getPortalHosts } from '@/lib/portalHosts';
 
 export default async function AccountLayout({ children }: { children: React.ReactNode }) {
   const headersList = await headers();
   const host = headersList.get('host') ?? '';
-  const onAdminHost = host.startsWith('admin.');
-  const rootHost = onAdminHost ? host.slice('admin.'.length) : host;
+  const { onAdminHost, mainHostFor: rootHost } = getPortalHosts(host);
   const protocol = host.includes('localhost') ? 'http' : 'https';
   const crossHostBase = onAdminHost ? `${protocol}://${rootHost}` : undefined;
 
