@@ -5,6 +5,7 @@ import { useState, useTransition } from 'react';
 import type { Book, ClassLevel } from '@/lib/types';
 import { pesewasToGHS } from '@/lib/currency';
 import { createBook, updateBook } from './actions';
+import { describeChange, diffBookForm, type ChangeSet } from '@/lib/bookChanges';
 import { useToast } from '@/components/ui/ToastContext';
 
 export default function BookFormModal({
@@ -18,11 +19,12 @@ export default function BookFormModal({
 }) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  // Editing: the form first shows what will change (before -> after); nothing is saved until you confirm.
+  const [review, setReview] = useState<{ formData: FormData; changes: ChangeSet } | null>(null);
 
   const { showToast } = useToast();
 
-  function handleSubmit(formData: FormData) {
-    setError(null);
+  function save(formData: FormData) {
     startTransition(async () => {
       try {
         if (book) await updateBook(book.id, formData);
@@ -31,22 +33,38 @@ export default function BookFormModal({
         onClose();
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong');
+        setReview(null);
       }
     });
+  }
+
+  function handleSubmit(formData: FormData) {
+    setError(null);
+    if (!book) {
+      save(formData);
+      return;
+    }
+    const changes = diffBookForm(book, formData);
+    if (Object.keys(changes).length === 0) {
+      setError('Nothing was changed.');
+      return;
+    }
+    setReview({ formData, changes });
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg bg-surface-card p-6">
         <h2 className="mb-4 text-lg font-semibold text-ink">
-          {book ? 'Edit book' : 'Add book'}
+          {review ? 'Review changes' : book ? 'Edit book' : 'Add book'}
         </h2>
 
         {error && (
           <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
         )}
 
-        <form action={handleSubmit} className="flex flex-col gap-3">
+        {/* Kept mounted (just hidden) while reviewing, so "Back" brings the form back exactly as it was. */}
+        <form action={handleSubmit} className={review ? 'hidden' : 'flex flex-col gap-3'}>
           <label className="flex flex-col gap-1 text-sm">
             Title
             <input
@@ -175,21 +193,6 @@ export default function BookFormModal({
           )}
 
           <label className="flex flex-col gap-1 text-sm">
-            Low-stock alert at
-            <input
-              name="low_stock_threshold"
-              type="number"
-              min="0"
-              step="1"
-              defaultValue={book?.low_stock_threshold ?? 5}
-              className="rounded-md border border-brand-sage px-3 py-2"
-            />
-            <span className="text-xs text-ink-muted">
-              Flag this book when stock falls to this number or below.
-            </span>
-          </label>         
-
-          <label className="flex flex-col gap-1 text-sm">
             Cover image
             <input
               name="cover"
@@ -217,6 +220,56 @@ export default function BookFormModal({
             </button>
           </div>
         </form>
+
+        {review && (
+          <div className="flex flex-col gap-4">
+            <p className="text-sm text-ink-muted">
+              Check what will change. Every change is saved in this book&rsquo;s history with your name and the time.
+            </p>
+            <table className="w-full text-sm">
+              <thead className="text-left text-xs text-ink-muted">
+                <tr>
+                  <th className="pb-2 pr-3 font-medium">Field</th>
+                  <th className="pb-2 pr-3 font-medium">Before</th>
+                  <th className="pb-2 font-medium">After</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(review.changes).map(([field, change]) => {
+                  const d = describeChange(field, change);
+                  return (
+                    <tr key={field} className="border-t border-border-beige align-top">
+                      <td className="py-2 pr-3 text-ink-muted">{d.label}</td>
+                      <td className="py-2 pr-3 text-ink-muted line-through">{d.before}</td>
+                      <td className="py-2 font-medium text-ink">{d.after}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <p className="text-xs text-ink-muted">
+              After saving, this book shows <span className="font-medium text-ink">Updated</span> in the list until an
+              admin marks it as reviewed.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setReview(null)}
+                className="rounded-md border border-brand-sage px-4 py-2 text-sm text-ink"
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={() => save(review.formData)}
+                className="rounded-md bg-brand-green px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+              >
+                {isPending ? 'Saving…' : 'Confirm and save'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

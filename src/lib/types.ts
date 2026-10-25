@@ -4,7 +4,6 @@ import type { Database } from '@/lib/database.types';
 
 // Levels the shop sells (the UI lists). 'Tertiary' stays in the DB enum only.
 export type ClassLevel =
-  | 'Nursery'
   | 'KG'
   | 'Primary 1-3'
   | 'Primary 4-6'
@@ -13,7 +12,6 @@ export type ClassLevel =
   | 'General';
 
 export const CLASS_LEVELS: ClassLevel[] = [
-  'Nursery',
   'KG',
   'Primary 1-3',
   'Primary 4-6',
@@ -36,9 +34,12 @@ export interface Book {
   vendor_price_pesewas: number;
   stock_quantity: number;
   damaged_quantity: number;
-  low_stock_threshold: number;
   is_active: boolean;
   cover_image_url: string | null;
+  // 'published' normally; 'updated' after an edit until an admin marks it reviewed
+  status: string;
+  last_edited_at: string | null;
+  last_edited_by: string | null;
   created_at: string;
   updated_at: string;
 }
