@@ -95,6 +95,7 @@ export type Database = {
           damaged_quantity: number;
           id: string;
           is_active: boolean;
+          low_stock_threshold: number;
           stock_quantity: number;
           subject: string | null;
           title: string;
@@ -116,6 +117,7 @@ export type Database = {
           damaged_quantity?: number;
           id?: string;
           is_active?: boolean;
+          low_stock_threshold?: number;
           stock_quantity?: number;
           subject?: string | null;
           title: string;
@@ -137,6 +139,7 @@ export type Database = {
           damaged_quantity?: number;
           id?: string;
           is_active?: boolean;
+          low_stock_threshold?: number;
           stock_quantity?: number;
           subject?: string | null;
           title?: string;
@@ -624,6 +627,7 @@ export type Database = {
           credit_limit_pesewas: number;
           full_name: string;
           id: string;
+          invite_accepted_at: string | null;
           is_super_admin: boolean;
           last_login_at: string | null;
           outstanding_balance_pesewas: number;
@@ -639,6 +643,7 @@ export type Database = {
           credit_limit_pesewas?: number;
           full_name: string;
           id: string;
+          invite_accepted_at?: string | null;
           is_super_admin?: boolean;
           last_login_at?: string | null;
           outstanding_balance_pesewas?: number;
@@ -654,6 +659,7 @@ export type Database = {
           credit_limit_pesewas?: number;
           full_name?: string;
           id?: string;
+          invite_accepted_at?: string | null;
           is_super_admin?: boolean;
           last_login_at?: string | null;
           outstanding_balance_pesewas?: number;
@@ -705,6 +711,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      low_stock_count: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
+      };
       approve_vendor_credit_order: {
         Args: { p_order_id: string; p_fulfillment: Database["public"]["Enums"]["fulfillment_type"] };
         Returns: undefined;

@@ -3,8 +3,10 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import type { Book, ClassLevel } from '@/lib/types';
 import { formatGHS } from '@/lib/currency';
+import { INVENTORY_PAGE_SIZE, type InventorySortKey, type SortDirection } from './inventoryQuery';
 import { deleteBook, markBookReviewed, restoreBook } from './actions';
 import { useToast } from '@/components/ui/ToastContext';
 import BookFormModal from './BookFormModal';
@@ -19,12 +21,22 @@ export default function InventoryTable({
   subjects,
   classLevels,
   activeFilters,
+  sort,
+  dir,
+  page,
+  pageCount,
+  totalCount,
 }: {
   books: Book[];
   categories: string[];
   subjects: string[];
   classLevels: ClassLevel[];
   activeFilters: { category?: string; subject?: string; class_level?: string; academic_year?: string; status?: string };
+  sort: InventorySortKey;
+  dir: SortDirection;
+  page: number;
+  pageCount: number;
+  totalCount: number;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -40,6 +52,22 @@ export default function InventoryTable({
     const next = new URLSearchParams(searchParams.toString());
     if (value) next.set(key, value);
     else next.delete(key);
+    next.delete('page');
+    router.push(`/admin/inventory?${next.toString()}`);
+  }
+
+  function updateSort(key: InventorySortKey) {
+    const next = new URLSearchParams(searchParams.toString());
+    next.set('sort', key);
+    next.set('dir', sort === key && dir === 'asc' ? 'desc' : 'asc');
+    next.delete('page');
+    router.push(`/admin/inventory?${next.toString()}`);
+  }
+
+  function updatePage(nextPage: number) {
+    const next = new URLSearchParams(searchParams.toString());
+    if (nextPage === 1) next.delete('page');
+    else next.set('page', String(nextPage));
     router.push(`/admin/inventory?${next.toString()}`);
   }
 
@@ -155,11 +183,29 @@ export default function InventoryTable({
           <thead className="bg-surface-cream text-left text-ink-muted">
             <tr>
               <th className="px-4 py-3">Cover</th>
-              <th className="px-4 py-3">Title</th>
-              <th className="px-4 py-3">Category / Level</th>
-              <th className="px-4 py-3">Retail</th>
-              <th className="px-4 py-3">Wholesale</th>
-              <th className="px-4 py-3">Stock</th>
+              {([
+                ['title', 'Title'],
+                ['category', 'Category / Level'],
+                ['retail', 'Retail'],
+                ['wholesale', 'Wholesale'],
+                ['stock', 'Stock'],
+              ] as const).map(([key, label]) => (
+                <th key={key} className="px-4 py-3">
+                  <button
+                    type="button"
+                    onClick={() => updateSort(key)}
+                    aria-label={`Sort by ${label}${sort === key ? `, currently ${dir}ending` : ''}`}
+                    className="inline-flex items-center gap-1 hover:text-ink"
+                  >
+                    {label}
+                    {sort === key ? (
+                      dir === 'asc' ? <ArrowUp size={14} aria-hidden="true" /> : <ArrowDown size={14} aria-hidden="true" />
+                    ) : (
+                      <ArrowUpDown size={14} aria-hidden="true" />
+                    )}
+                  </button>
+                </th>
+              ))}
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
@@ -251,6 +297,34 @@ export default function InventoryTable({
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-sm text-ink-muted">
+        <span>
+          Showing {totalCount === 0 ? 0 : (page - 1) * INVENTORY_PAGE_SIZE + 1}–
+          {Math.min(page * INVENTORY_PAGE_SIZE, totalCount)} of {totalCount}
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => updatePage(page - 1)}
+            disabled={page <= 1}
+            className="rounded-md border border-brand-sage px-3 py-1.5 disabled:opacity-40"
+          >
+            Previous
+          </button>
+          <span>
+            Page {page} of {pageCount}
+          </span>
+          <button
+            type="button"
+            onClick={() => updatePage(page + 1)}
+            disabled={page >= pageCount}
+            className="rounded-md border border-brand-sage px-3 py-1.5 disabled:opacity-40"
+          >
+            Next
+          </button>
+        </div>
       </div>
 
       {editingBook && (
