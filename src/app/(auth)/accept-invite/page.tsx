@@ -26,63 +26,65 @@ export default async function AcceptInvitePage({
   if (profile.invite_accepted_at) redirect('/admin/dashboard');
 
   return (
-    <div className="mx-auto flex w-full max-w-sm flex-col justify-center px-6 py-16">
-      <h1 className="mb-1 text-2xl font-semibold text-ink">Welcome to Tamak Bookshop</h1>
-      <p className="mb-6 text-sm text-ink-muted">
-        Confirm your details and choose a password to finish setting up your {profile.role} account.
-      </p>
+    <div className="mx-auto my-12 w-full max-w-md px-6">
+      <div className="auth-card rounded-2xl border border-border-beige px-7 py-9 sm:px-8 sm:py-10">
+        <h1 className="mb-1 font-serif text-3xl text-brand-green">Welcome to Tamak Bookshop</h1>
+        <p className="mb-6 text-sm text-ink-muted">
+          Confirm your details and choose a password to finish setting up your {profile.role} account.
+        </p>
 
-      {params.error && (
-        <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{params.error}</p>
-      )}
+        {params.error && (
+          <p className="mb-4 rounded-xl bg-red-50 px-3.5 py-2.5 text-sm text-red-700">{params.error}</p>
+        )}
 
-      <form action={setPassword} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1 text-sm">
-          Full name
-          <input
-            value={profile.full_name}
-            disabled
-            readOnly
-            className="rounded-md border border-brand-sage bg-surface-cream px-3 py-2 text-ink-muted"
-          />
-        </label>
+        <form action={setPassword} className="flex flex-col gap-4">
+          <label className="flex flex-col gap-1.5 text-sm font-medium text-ink">
+            Full name
+            <input
+              value={profile.full_name}
+              disabled
+              readOnly
+              className="rounded-xl border border-brand-sage bg-surface-cream px-3.5 py-3 text-sm font-normal text-ink-muted"
+            />
+          </label>
 
-        <label className="flex flex-col gap-1 text-sm">
-          Email
-          <input
-            value={user.email ?? ''}
-            disabled
-            readOnly
-            className="rounded-md border border-brand-sage bg-surface-cream px-3 py-2 text-ink-muted"
-          />
-        </label>
+          <label className="flex flex-col gap-1.5 text-sm font-medium text-ink">
+            Email
+            <input
+              value={user.email ?? ''}
+              disabled
+              readOnly
+              className="rounded-xl border border-brand-sage bg-surface-cream px-3.5 py-3 text-sm font-normal text-ink-muted"
+            />
+          </label>
 
-        <label className="flex flex-col gap-1 text-sm">
-          New password
-          <PasswordInput
-            name="password"
-            required
-            minLength={8}
-            placeholder="At least 8 characters"
-            className="rounded-md border border-brand-sage px-3 py-2"
-          />
-        </label>
+          <label className="flex flex-col gap-1.5 text-sm font-medium text-ink">
+            New password
+            <PasswordInput
+              name="password"
+              required
+              minLength={8}
+              placeholder="At least 8 characters"
+              className="rounded-xl border border-brand-sage bg-surface-card px-3.5 py-3 text-sm font-normal text-ink outline-none focus:border-brand-green"
+            />
+          </label>
 
-        <label className="flex flex-col gap-1 text-sm">
-          Confirm new password
-          <PasswordInput
-            name="confirm"
-            required
-            minLength={8}
-            placeholder="Re-enter your password"
-            className="rounded-md border border-brand-sage px-3 py-2"
-          />
-        </label>
+          <label className="flex flex-col gap-1.5 text-sm font-medium text-ink">
+            Confirm new password
+            <PasswordInput
+              name="confirm"
+              required
+              minLength={8}
+              placeholder="Re-enter your password"
+              className="rounded-xl border border-brand-sage bg-surface-card px-3.5 py-3 text-sm font-normal text-ink outline-none focus:border-brand-green"
+            />
+          </label>
 
-        <button type="submit" className="mt-2 rounded-md bg-brand-green px-4 py-2 font-medium text-white">
-          Set password and continue
-        </button>
-      </form>
+          <button type="submit" className="mt-2 rounded-xl bg-brand-green px-4 py-3 font-medium text-white">
+            Set password and continue
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
