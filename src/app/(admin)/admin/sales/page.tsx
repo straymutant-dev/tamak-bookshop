@@ -2,6 +2,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { formatGHS } from '@/lib/currency';
+import AdminDatePicker from '@/components/admin/AdminDatePicker';
 
 // Ghana is on GMT all year, so a UTC day is the same as a local day.
 function todayUtc() {
@@ -245,16 +246,10 @@ export default async function DailySalesPage({ searchParams }: { searchParams: P
       </p>
 
       <form method="get" className="mb-6 flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-xs text-ink-muted">
+        <div className="flex flex-col gap-1 text-xs text-ink-muted">
           Date
-          <input
-            type="date"
-            name="date"
-            defaultValue={date}
-            max={todayUtc()}
-            className="rounded-md border border-brand-sage px-3 py-2 text-sm text-ink"
-          />
-        </label>
+          <AdminDatePicker name="date" value={date} maxDate={todayUtc()} />
+        </div>
         <button type="submit" className="rounded-md bg-brand-green px-4 py-2 text-sm font-medium text-white">
           Show
         </button>

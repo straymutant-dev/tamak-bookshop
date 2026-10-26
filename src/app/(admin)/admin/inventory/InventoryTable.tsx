@@ -13,6 +13,7 @@ import BookFormModal from './BookFormModal';
 import StockAdjustModal from './StockAdjustModal';
 import BookHistoryModal from './BookhistoryModal';
 import ImageWithSkeleton from '@/components/ui/ImageWithSkeleton';
+import AdminFilterDropdown from '@/components/admin/AdminFilterDropdown';
 
 
 export default function InventoryTable({
@@ -107,59 +108,51 @@ export default function InventoryTable({
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-end gap-3">
-        <select
-          defaultValue={activeFilters.status ?? 'active'}
-          onChange={(e) => updateFilter('status', e.target.value === 'active' ? '' : e.target.value)}
-          className="rounded-md border border-brand-sage px-3 py-2 text-sm"
-        >
-          <option value="active">Active books</option>
-          <option value="archived">Archived (deleted)</option>
-        </select>
+        <AdminFilterDropdown
+          label="Filter by status"
+          options={[
+            { value: 'active', label: 'Active books' },
+            { value: 'archived', label: 'Archived (deleted)' },
+          ]}
+          value={activeFilters.status ?? 'active'}
+          onChange={(value) => updateFilter('status', value === 'active' ? '' : value)}
+        />
 
-        <select
-          defaultValue={activeFilters.class_level ?? ''}
-          onChange={(e) => updateFilter('class_level', e.target.value)}
-          className="rounded-md border border-brand-sage px-3 py-2 text-sm"
-        >
-          <option value="">All class levels</option>
-          {classLevels.map((lvl) => (
-            <option key={lvl} value={lvl}>
-              {lvl}
-            </option>
-          ))}
-        </select>
+        <AdminFilterDropdown
+          label="Filter by class level"
+          options={[
+            { value: '', label: 'All class levels' },
+            ...classLevels.map((classLevel) => ({ value: classLevel, label: classLevel })),
+          ]}
+          value={activeFilters.class_level ?? ''}
+          onChange={(value) => updateFilter('class_level', value)}
+        />
 
-        <select
-          defaultValue={activeFilters.category ?? ''}
-          onChange={(e) => updateFilter('category', e.target.value)}
-          className="rounded-md border border-brand-sage px-3 py-2 text-sm"
-        >
-          <option value="">All categories</option>
-          {categories.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
+        <AdminFilterDropdown
+          label="Filter by category"
+          options={[
+            { value: '', label: 'All categories' },
+            ...categories.map((category) => ({ value: category, label: category })),
+          ]}
+          value={activeFilters.category ?? ''}
+          onChange={(value) => updateFilter('category', value)}
+        />
 
-        <select
-          defaultValue={activeFilters.subject ?? ''}
-          onChange={(e) => updateFilter('subject', e.target.value)}
-          className="rounded-md border border-brand-sage px-3 py-2 text-sm"
-        >
-          <option value="">All subjects</option>
-          {subjects.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
+        <AdminFilterDropdown
+          label="Filter by subject"
+          options={[
+            { value: '', label: 'All subjects' },
+            ...subjects.map((subject) => ({ value: subject, label: subject })),
+          ]}
+          value={activeFilters.subject ?? ''}
+          onChange={(value) => updateFilter('subject', value)}
+        />
 
         <input
           placeholder="Academic year"
           defaultValue={activeFilters.academic_year ?? ''}
           onBlur={(e) => updateFilter('academic_year', e.target.value)}
-          className="rounded-md border border-brand-sage px-3 py-2 text-sm"
+          className="inventory-filter-input"
         />
 
         <div className="ml-auto flex items-center gap-2">

@@ -115,7 +115,7 @@ export default function BookFormModal({
               <select
                 name="class_level"
                 defaultValue={book?.class_level ?? ''}
-                className="rounded-md border border-brand-sage px-3 py-2"
+                className="inventory-select w-full"
               >
                 <option value="">—</option>
                 {classLevels.map((lvl) => (

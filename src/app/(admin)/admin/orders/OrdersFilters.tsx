@@ -2,7 +2,9 @@
 'use client';
 
 import { useEffect, useRef, useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import AdminFilterDropdown from '@/components/admin/AdminFilterDropdown';
+import AdminDatePicker from '@/components/admin/AdminDatePicker';
 
 interface Option {
   value: string;
@@ -23,6 +25,7 @@ export default function OrdersFilters({
   statusOptions: Option[];
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [q, setQ] = useState(initial.q);
   const [from, setFrom] = useState(initial.from);
   const [to, setTo] = useState(initial.to);
@@ -30,6 +33,7 @@ export default function OrdersFilters({
   const [status, setStatus] = useState(initial.status);
   const [isPending, startTransition] = useTransition();
   const firstRun = useRef(true);
+  const keepUnpaidTab = searchParams.get('tab') === 'unpaid';
 
   useEffect(() => {
     // Don't re-navigate on the first render.
@@ -45,6 +49,7 @@ export default function OrdersFilters({
       if (to) sp.set('to', to);
       if (type) sp.set('type', type);
       if (status) sp.set('status', status);
+      if (keepUnpaidTab) sp.set('tab', 'unpaid');
       const qs = sp.toString();
       startTransition(() => {
         router.replace(`/admin/orders${qs ? `?${qs}` : ''}`, { scroll: false });
@@ -52,10 +57,10 @@ export default function OrdersFilters({
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [q, from, to, type, status, router]);
+  }, [q, from, to, type, status, router, keepUnpaidTab]);
 
   const hasFilters = Boolean(q || from || to || type || status);
-  const fieldClass = 'rounded-md border border-brand-sage px-3 py-2 text-sm text-ink';
+  const fieldClass = 'orders-filters__field';
 
   function clearAll() {
     setQ('');
@@ -66,53 +71,55 @@ export default function OrdersFilters({
   }
 
   return (
-    <div className="mb-6 flex flex-wrap items-end gap-3">
-      <label className="flex min-w-56 flex-1 flex-col gap-1 text-xs text-ink-muted">
+    <div className="orders-filters mb-6">
+      <label className="orders-filters__label">
         Search
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Order number, customer name or phone"
+          placeholder="Order no., customer or phone"
           className={fieldClass}
           autoComplete="off"
         />
       </label>
-      <label className="flex flex-col gap-1 text-xs text-ink-muted">
+      <label className="orders-filters__label">
         From
-        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={fieldClass} />
+        <AdminDatePicker value={from} onChange={setFrom} placeholder="Any date" className="admin-date-picker--orders" />
       </label>
-      <label className="flex flex-col gap-1 text-xs text-ink-muted">
+      <label className="orders-filters__label">
         To
-        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={fieldClass} />
+        <AdminDatePicker value={to} onChange={setTo} placeholder="Any date" className="admin-date-picker--orders" />
       </label>
-      <label className="flex flex-col gap-1 text-xs text-ink-muted">
+      <label className="orders-filters__label">
         Type
-        <select value={type} onChange={(e) => setType(e.target.value)} className={fieldClass}>
-          <option value="">All</option>
-          {typeOptions.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+        <AdminFilterDropdown
+          label="Filter by order type"
+          options={[{ value: '', label: 'All types' }, ...typeOptions]}
+          value={type}
+          onChange={setType}
+          className="admin-filter-dropdown--orders"
+        />
       </label>
-      <label className="flex flex-col gap-1 text-xs text-ink-muted">
+      <label className="orders-filters__label">
         Payment
-        <select value={status} onChange={(e) => setStatus(e.target.value)} className={fieldClass}>
-          <option value="">Any</option>
-          {statusOptions.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+        <AdminFilterDropdown
+          label="Filter by payment status"
+          options={[{ value: '', label: 'Any payment status' }, ...statusOptions]}
+          value={status}
+          onChange={setStatus}
+          className="admin-filter-dropdown--orders"
+        />
       </label>
-      {hasFilters && (
-        <button type="button" onClick={clearAll} className="py-2 text-sm text-brand-green hover:underline">
-          Clear
-        </button>
+      {(hasFilters || isPending) && (
+        <div className="orders-filters__actions">
+          {hasFilters && (
+            <button type="button" onClick={clearAll} className="text-sm text-brand-green hover:underline">
+              Clear
+            </button>
+          )}
+          {isPending && <span className="text-xs text-ink-muted">Searching…</span>}
+        </div>
       )}
-      {isPending && <span className="py-2 text-xs text-ink-muted">Searching…</span>}
     </div>
   );
 }

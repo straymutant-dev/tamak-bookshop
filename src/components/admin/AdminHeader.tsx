@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import {
   Activity,
   BookOpen,
@@ -16,6 +16,7 @@ import {
   Settings,
   ShoppingCart,
   Store,
+  CircleDollarSign,
   Users,
   UserCog,
 } from 'lucide-react';
@@ -42,6 +43,7 @@ const ALL_LINKS: {
   { label: 'Dashboard', href: '/admin/dashboard', section: 'Overview', icon: LayoutDashboard },
   { label: 'POS', href: '/admin/pos', section: 'Sales', icon: ShoppingCart },
   { label: 'Orders', href: '/admin/orders', section: 'Sales', icon: ClipboardList },
+  { label: 'Unpaid sales', href: '/admin/orders?tab=unpaid', section: 'Sales', icon: CircleDollarSign },
   { label: 'Daily sales', href: '/admin/sales', section: 'Sales', icon: Receipt },
   { label: 'Repayments', href: '/admin/repayments', section: 'Sales', icon: CreditCard },
   { label: 'Inventory', href: '/admin/inventory', section: 'Catalog', icon: BookOpen },
@@ -69,6 +71,7 @@ export default function AdminHeader({
 }) {
 
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
   const unsent = useUnsentSalesCount();
@@ -83,7 +86,14 @@ export default function AdminHeader({
     return true;
   });
   
-  const isActive = (href: string) => pathname === href || pathname?.startsWith(`${href}/`);
+  const isActive = (href: string) => {
+    const [path, query] = href.split('?');
+    if (pathname !== path && !pathname?.startsWith(`${path}/`)) return false;
+    if (query) {
+      return new URLSearchParams(query).get('tab') === searchParams.get('tab');
+    }
+    return path !== '/admin/orders' || searchParams.get('tab') !== 'unpaid';
+  };
 
   // One last try to send any saved counter sales before the person is signed out.
   async function beforeSignOut() {

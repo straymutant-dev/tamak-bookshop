@@ -36,6 +36,13 @@ const STATUS_LABEL: Record<string, (fulfillment: string) => string> = {
   completed: (f) => (f === 'delivery' ? 'Delivered' : 'Picked up'),
 };
 
+const PAYMENT_STATUS_LABEL: Record<string, string> = {
+  payment_pending: 'Awaiting payment',
+  credit_pending: 'Credit awaiting approval',
+  credit_approved: 'On credit · unpaid',
+  partially_paid: 'Part paid',
+};
+
 export default function OrdersTable({
   orders,
   namesById,
@@ -76,7 +83,16 @@ export default function OrdersTable({
                 <td className="px-4 py-3 text-ink-muted">
                   {order.staff_id ? namesById[order.staff_id] ?? 'Staff' : 'Storefront (self-checkout)'}
                 </td>
-                <td className="px-4 py-3 text-ink-muted capitalize">{order.payment_method.replace('_', ' ')}</td>
+                <td className="px-4 py-3 text-ink-muted">
+                  <span className="capitalize">{order.payment_method.replace('_', ' ')}</span>
+                  {order.payment_status !== 'paid' && (
+                    <div className="mt-1">
+                      <span className="rounded-full bg-accent-terracotta/10 px-2 py-0.5 text-xs font-medium text-accent-terracotta">
+                        {PAYMENT_STATUS_LABEL[order.payment_status] ?? 'Unpaid'}
+                      </span>
+                    </div>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-ink-muted">
                   <span className="capitalize">{order.fulfillment_type}</span>
                   {' · '}

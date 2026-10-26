@@ -48,6 +48,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const params = await searchParams;
   const showVendor = params.tab === 'vendor';
   const showWalkin = params.tab === 'walkin';
+  const showUnpaid = params.tab === 'unpaid';
   const supabase = await createClient();
 
   const { count: waitingCount } = await supabase
@@ -62,6 +63,11 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
     .eq('order_type', 'counter_pos')
     .is('user_id', null)
     .eq('payment_status', 'credit_approved');
+
+  const { count: unpaidCount } = await supabase
+    .from('orders')
+    .select('id', { count: 'exact', head: true })
+    .neq('payment_status', 'paid');
 
   const tabClass = (active: boolean) =>
     `border-b-2 px-4 py-2 text-sm ${
@@ -81,7 +87,11 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
     const from = DATE_RE.test(params.from ?? '') ? (params.from as string) : '';
     const to = DATE_RE.test(params.to ?? '') ? (params.to as string) : '';
     const type = TYPE_OPTIONS.some((o) => o.value === params.type) ? (params.type as string) : '';
-    const status = STATUS_OPTIONS.some((o) => o.value === params.status) ? (params.status as string) : '';
+    const status = STATUS_OPTIONS.some(
+      (o) => o.value === params.status && (!showUnpaid || o.value !== 'paid')
+    )
+      ? (params.status as string)
+      : '';
     const page = Math.max(1, Number.parseInt(params.page ?? '1', 10) || 1);
     const offset = (page - 1) * PAGE_SIZE;
 
@@ -103,6 +113,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
         status as 'paid' | 'payment_pending' | 'credit_pending' | 'credit_approved' | 'partially_paid'
       );
     }
+    if (showUnpaid) query = query.neq('payment_status', 'paid');
 
     const { data: orders, error, count } = await query.range(offset, offset + PAGE_SIZE - 1);
 
@@ -130,6 +141,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
       if (to) sp.set('to', to);
       if (type) sp.set('type', type);
       if (status) sp.set('status', status);
+      if (showUnpaid) sp.set('tab', 'unpaid');
       if (target > 1) sp.set('page', String(target));
       const qs = sp.toString();
       return `/admin/orders${qs ? `?${qs}` : ''}`;
@@ -140,11 +152,11 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
         <OrdersFilters
           initial={{ q, from, to, type, status }}
           typeOptions={TYPE_OPTIONS}
-          statusOptions={STATUS_OPTIONS}
+          statusOptions={showUnpaid ? STATUS_OPTIONS.filter((option) => option.value !== 'paid') : STATUS_OPTIONS}
         />
 
         <p className="mb-4 text-sm text-ink-muted">
-          {hasFilters ? 'Matching orders' : 'Every sale on the platform, most recent first'}
+          {hasFilters ? 'Matching orders' : showUnpaid ? 'Sales that have not been fully paid' : 'Every sale on the platform, most recent first'}
           {total > 0 ? ` · showing ${firstShown}–${lastShown} of ${total}` : ''}
         </p>
 
@@ -192,8 +204,16 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
       <h1 className="mb-4 text-xl font-semibold text-ink">Orders & sales</h1>
 
       <div className="mb-6 flex gap-2 border-b border-border-beige">
-        <Link href="/admin/orders" className={tabClass(!showVendor && !showWalkin)}>
+        <Link href="/admin/orders" className={tabClass(!showVendor && !showWalkin && !showUnpaid)}>
           All orders
+        </Link>
+        <Link href="/admin/orders?tab=unpaid" className={tabClass(showUnpaid)}>
+          Unpaid sales
+          {(unpaidCount ?? 0) > 0 && (
+            <span className="ml-2 rounded-full bg-accent-terracotta px-2 py-0.5 text-xs font-medium text-white">
+              {unpaidCount}
+            </span>
+          )}
         </Link>
         <Link href="/admin/orders?tab=vendor" className={tabClass(showVendor)}>
           To action
