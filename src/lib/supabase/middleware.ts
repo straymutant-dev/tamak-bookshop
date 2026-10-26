@@ -3,6 +3,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { sessionCookieOptions } from './cookieOptions';
+import { getPortalHosts } from '@/lib/portalHosts';
 
 type Role = 'client' | 'vendor' | 'staff' | 'admin';
 
@@ -59,9 +60,14 @@ function unreachableResponse() {
 // icon.png, apple-icon.png, opengraph-image.png, /icons/*.png) never reach this code:
 // the matcher in src/middleware.ts already skips favicon.ico and .png/.svg/.jpg files.
 const METADATA_PATHS = new Set(['/robots.txt', '/sitemap.xml', '/manifest.webmanifest', '/sw.js']);
+const SHARED_HOST_PATHS = ['/account', '/api', '/about', '/auth', '/accept-invite', '/invite-expired'];
 
 function isMetadataRoute(pathname: string) {
   return METADATA_PATHS.has(pathname);
+}
+
+function isSharedHostPath(pathname: string) {
+  return SHARED_HOST_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }
 
 export async function updateSession(request: NextRequest) {
@@ -99,22 +105,8 @@ export async function updateSession(request: NextRequest) {
     console.warn('[auth] getUser failed:', authError.name, '-', authError.message);
   }
 
-  const hostname = (request.headers.get('host') ?? request.nextUrl.hostname).split(':')[0];
-
-  // TEMPORARY, for testing the admin portal on free *.vercel.app addresses before
-  // the real domain is live — two unrelated vercel.app hostnames can't relate to
-  // each other via an "admin." prefix the way admin.tamakbookshop.com does, so
-  // this pair of env vars lets the middleware treat one specific hostname as the
-  // admin host and know the other is its "main" counterpart. Unset in production;
-  // remove this block entirely once the real domain is in use.
-  const ADMIN_TEST_HOST = process.env.NEXT_PUBLIC_ADMIN_TEST_HOST;
-  const SITE_TEST_HOST = process.env.NEXT_PUBLIC_SITE_TEST_HOST;
-  const isTestHostPair = Boolean(ADMIN_TEST_HOST && SITE_TEST_HOST);
-
-  const onAdminHost = hostname.startsWith('admin.') || (isTestHostPair && hostname === ADMIN_TEST_HOST);
-  const rootDomain = hostname.startsWith('admin.') ? hostname.slice('admin.'.length) : hostname;
-  const adminHostFor = isTestHostPair ? ADMIN_TEST_HOST! : `admin.${rootDomain}`;
-  const mainHostFor = isTestHostPair ? SITE_TEST_HOST! : rootDomain;
+  const hostname = request.headers.get('host') ?? request.nextUrl.hostname;
+  const { onAdminHost, adminHostFor, mainHostFor } = getPortalHosts(hostname);
   const originalPath = request.nextUrl.pathname;
 
   let profile: Profile | null = null;
@@ -148,15 +140,8 @@ export async function updateSession(request: NextRequest) {
     if (originalPath === '/login') effectivePath = '/admin-login';
     else if (originalPath === '/') effectivePath = '/admin/inventory';
     else if (originalPath.startsWith('/admin')) effectivePath = originalPath;
-    else if (originalPath.startsWith('/account') || originalPath.startsWith('/api') || originalPath.startsWith('/about')) effectivePath = originalPath; // shared routes — serve as-is, no admin prefix
+    else if (isSharedHostPath(originalPath)) effectivePath = originalPath;
     else effectivePath = `/admin${originalPath}`;
-  }
-
-  // Already-authenticated staff/admin skip the admin-host login form.
-  if (onAdminHost && effectivePath === '/admin-login' && profile && (profile.role === 'admin' || profile.role === 'staff')) {
-    const dest = request.nextUrl.clone();
-    dest.pathname = '/inventory';
-    return NextResponse.redirect(dest);
   }
 
   // Staff/admin shouldn't authenticate via the main-host login at all —
