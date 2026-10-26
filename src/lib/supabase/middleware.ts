@@ -60,9 +60,14 @@ function unreachableResponse() {
 // icon.png, apple-icon.png, opengraph-image.png, /icons/*.png) never reach this code:
 // the matcher in src/middleware.ts already skips favicon.ico and .png/.svg/.jpg files.
 const METADATA_PATHS = new Set(['/robots.txt', '/sitemap.xml', '/manifest.webmanifest', '/sw.js']);
+const SHARED_HOST_PATHS = ['/account', '/api', '/about', '/auth', '/accept-invite', '/invite-expired'];
 
 function isMetadataRoute(pathname: string) {
   return METADATA_PATHS.has(pathname);
+}
+
+function isSharedHostPath(pathname: string) {
+  return SHARED_HOST_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }
 
 export async function updateSession(request: NextRequest) {
@@ -135,7 +140,7 @@ export async function updateSession(request: NextRequest) {
     if (originalPath === '/login') effectivePath = '/admin-login';
     else if (originalPath === '/') effectivePath = '/admin/inventory';
     else if (originalPath.startsWith('/admin')) effectivePath = originalPath;
-    else if (originalPath.startsWith('/account') || originalPath.startsWith('/api') || originalPath.startsWith('/about')) effectivePath = originalPath; // shared routes — serve as-is, no admin prefix
+    else if (isSharedHostPath(originalPath)) effectivePath = originalPath;
     else effectivePath = `/admin${originalPath}`;
   }
 
