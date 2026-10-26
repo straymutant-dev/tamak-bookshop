@@ -19,7 +19,9 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
     return (
       <div className="auth-shell flex min-h-screen flex-col items-center justify-center px-6 py-16">
         <SiteLogoPattern variant="auth" />
-        <BrandMark className="mb-8 h-10" />
+        <div className="mb-8 rounded-2xl border border-white/30 bg-white px-6 py-4 shadow-xl">
+          <BrandMark className="h-10" />
+        </div>
         {children}
       </div>
     );
