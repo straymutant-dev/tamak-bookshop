@@ -200,7 +200,9 @@ export default function BookFormModal({
               accept="image/png,image/jpeg"
               className="rounded-md border border-brand-sage px-3 py-2"
             />
-            <span className="text-xs text-ink-muted">PNG or JPEG only.</span>
+            <span className="text-xs text-ink-muted">
+              PNG or JPEG, up to 4 MB. Covers are automatically resized and optimized for the catalog.
+            </span>
           </label>
 
           <div className="mt-2 flex justify-end gap-3">

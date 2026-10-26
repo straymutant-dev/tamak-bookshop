@@ -5,6 +5,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { formatGHS } from '@/lib/currency';
 import type { Json } from '@/lib/database.types';
+import { fetchPaymentAccounts, requirePaymentAccount } from '@/lib/paymentAccounts';
 
 interface SaleItem {
   bookId: string;
@@ -28,6 +29,9 @@ export async function submitPosSale(formData: FormData) {
 
   if (!paymentMethod) {
     throw new Error('Choose a payment method');
+  }
+  if (paymentMethod === 'mobile_money' || paymentMethod === 'bank_transfer') {
+    requirePaymentAccount(await fetchPaymentAccounts(supabase), paymentMethod);
   }
 
   let requestedItems: SaleItem[];

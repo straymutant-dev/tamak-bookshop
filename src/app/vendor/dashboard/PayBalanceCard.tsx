@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/ToastContext';
 import { formatGHS } from '@/lib/currency';
 import { submitRepaymentRequest } from './actions';
+import type { PaymentAccount } from '@/lib/paymentTypes';
+import PaymentAccountList from '@/components/payments/PaymentAccountList';
 
 const METHODS = [
   { value: 'mobile_money', label: 'Mobile Money', refLabel: 'Transaction ID' },
@@ -17,18 +19,31 @@ const METHODS = [
 export default function PayBalanceCard({
   outstandingPesewas,
   defaultPhone,
+  paymentAccounts,
 }: {
   outstandingPesewas: number;
   defaultPhone: string;
+  paymentAccounts: PaymentAccount[];
 }) {
-  const [method, setMethod] = useState('mobile_money');
+  const availableMethods = METHODS.filter(
+    (candidate) =>
+      (candidate.value !== 'mobile_money' && candidate.value !== 'bank_transfer') ||
+      paymentAccounts.some((account) => account.kind === candidate.value)
+  );
+  const [method, setMethod] = useState(
+    paymentAccounts.some((account) => account.kind === 'mobile_money')
+      ? 'mobile_money'
+      : paymentAccounts.some((account) => account.kind === 'bank_transfer')
+        ? 'bank_transfer'
+        : 'cash'
+  );
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
   const { showToast } = useToast();
 
-  const current = METHODS.find((m) => m.value === method) ?? METHODS[0];
+  const current = availableMethods.find((m) => m.value === method) ?? availableMethods[0];
 
   function handleSubmit(formData: FormData) {
     setError(null);
@@ -77,13 +92,23 @@ export default function PayBalanceCard({
               onChange={(e) => setMethod(e.target.value)}
               className="rounded-md border border-brand-sage px-3 py-2"
             >
-              {METHODS.map((m) => (
+              {availableMethods.map((m) => (
                 <option key={m.value} value={m.value}>
                   {m.label}
                 </option>
               ))}
             </select>
           </label>
+
+          {(method === 'mobile_money' || method === 'bank_transfer') && (
+            <div className="sm:col-span-2 rounded-md border border-border-beige bg-surface-cream p-3">
+              <p className="text-xs font-medium text-ink">Pay Tamak Bookshop using this {current.label} account</p>
+              <PaymentAccountList accounts={paymentAccounts.filter((account) => account.kind === method)} />
+              <p className="mt-2 text-xs text-ink-muted">
+                Use your name or vendor phone number as the payment narration, then enter the transaction ID below.
+              </p>
+            </div>
+          )}
 
           <label className="flex flex-col gap-1 text-sm">
             {current.refLabel}

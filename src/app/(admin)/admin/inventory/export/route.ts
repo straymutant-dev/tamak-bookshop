@@ -171,18 +171,14 @@ export async function GET(request: Request) {
     page.drawText(text, { x: xRight - f.widthOfTextAtSize(text, size), y, size, font: f, color });
   };
 
-  // Logo — fetched from the public folder (same file the receipt uses).
+  // Use a print-resolution JPEG logo on the white PDF page to keep exports compact.
   // If it can't be loaded the header simply falls back to text only.
   let logo: PDFImage | null = null;
   try {
-    const res = await fetch(new URL('/images/logo.png', request.url));
+    const res = await fetch(new URL('/images/logo-pdf.jpg', request.url));
     if (res.ok) {
       const bytes = new Uint8Array(await res.arrayBuffer());
-      try {
-        logo = await pdf.embedPng(bytes);
-      } catch {
-        logo = await pdf.embedJpg(bytes);
-      }
+      logo = await pdf.embedJpg(bytes);
     }
   } catch {
     logo = null;
@@ -404,7 +400,7 @@ export async function GET(request: Request) {
     rightText(p, `Page ${idx + 1} of ${pages.length}`, MARGIN + CONTENT_W, 28, 8, font, hex('#444444'));
   });
 
-  const bytes = await pdf.save();
+  const bytes = await pdf.save({ useObjectStreams: true });
   const filename = `tamak-inventory-${new Date().toISOString().slice(0, 10)}.pdf`;
 
   return new Response(new Uint8Array(bytes), {

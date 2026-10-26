@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { normalizeGhanaPhone } from '@/lib/phone';
 import type { SaleResult } from '../Receipt';
+import { fetchPaymentAccounts, requirePaymentAccount } from '@/lib/paymentAccounts';
 
 type PosMethod = 'credit' | 'cash' | 'mobile_money' | 'bank_transfer';
 const METHODS: PosMethod[] = ['credit', 'cash', 'mobile_money', 'bank_transfer'];
@@ -52,6 +53,9 @@ export async function submitVendorPosSale(formData: FormData): Promise<SaleResul
   if (!items.length) throw new Error('Cart is empty');
 
   const supabase = await createClient();
+  if (method === 'mobile_money' || method === 'bank_transfer') {
+    requirePaymentAccount(await fetchPaymentAccounts(supabase), method);
+  }
   const { data, error } = await supabase.rpc('pos_vendor_sale', {
     // Null is intentional: registered vendors have no walk-in details,
     // walk-in sales have no vendor id. The SQL function handles both.

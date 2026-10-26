@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { ghsToPesewas } from '@/lib/currency';
 import { normalizeGhanaPhone } from '@/lib/phone';
+import { fetchPaymentAccounts, requirePaymentAccount } from '@/lib/paymentAccounts';
 
 const METHODS = ['cash', 'mobile_money', 'bank_transfer', 'cheque'] as const;
 type RepayMethod = (typeof METHODS)[number];
@@ -40,6 +41,9 @@ export async function submitRepaymentRequest(formData: FormData) {
 
   const method = String(formData.get('method') ?? '') as RepayMethod;
   if (!METHODS.includes(method)) throw new Error('Choose how you paid');
+  if (method === 'mobile_money' || method === 'bank_transfer') {
+    requirePaymentAccount(await fetchPaymentAccounts(supabase), method);
+  }
 
   const reference = String(formData.get('reference') ?? '').trim() || null;
   if (method !== 'cash' && !reference) {

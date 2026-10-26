@@ -2,6 +2,7 @@
 import { createClient } from '@/lib/supabase/server';
 import PosTabs from '../PosTabs';
 import VendorPosTerminal from './VendorPosTerminal';
+import { fetchPaymentAccounts } from '@/lib/paymentAccounts';
 
 export default async function VendorPosPage() {
   const supabase = await createClient();
@@ -10,6 +11,7 @@ export default async function VendorPosPage() {
   } = await supabase.auth.getUser();
 
   const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user!.id).single();
+  const paymentAccounts = await fetchPaymentAccounts(supabase);
 
   const { data: books, error } = await supabase
     .from('books')
@@ -61,6 +63,7 @@ export default async function VendorPosPage() {
           reservedPesewas: reservedByVendor[v.id] ?? 0,
         }))}
         cashierName={profile?.full_name ?? 'Staff'}
+        paymentAccounts={paymentAccounts}
       />
     </div>
   );

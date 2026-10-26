@@ -11,8 +11,13 @@ export default function HeroImage({ className = '' }: { className?: string }) {
       {!failed && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src="/images/hero.png"
+          src="/images/hero.webp"
           alt="Tamak Series Mathematics book"
+          width={413}
+          height={605}
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
           className="h-full w-full object-contain"
           onError={() => setFailed(true)}
         />

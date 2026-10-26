@@ -49,7 +49,7 @@ export default function Receipt({ sale, cashierName }: { sale: SaleResult; cashi
       <div id="printable-receipt">
         <div className="rcpt-head">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/logo.png" alt="Tamak logo" className="rcpt-logo" />
+          <img src="/images/logo.webp" alt="Tamak logo" width={1800} height={432} className="rcpt-logo" />
           <div className="rcpt-shop">
             <div className="rcpt-shop-name">{SHOP.name}</div>
             <div>{SHOP.address}</div>

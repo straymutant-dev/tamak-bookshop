@@ -7,6 +7,7 @@ import StatRow from '@/components/admin/StatRow';
 import PayBalanceCard from './PayBalanceCard';
 import OrderNumberButton from '@/components/orders/OrderNumberButton';
 import CreditGauge from './CreditGauge';
+import { fetchPaymentAccounts } from '@/lib/paymentAccounts';
 
 
 const STATUS_LABEL: Record<string, string> = {
@@ -62,6 +63,8 @@ export default async function VendorDashboardPage() {
     .eq('vendor_id', user.id)
     .order('created_at', { ascending: false })
     .limit(5);
+
+  const paymentAccounts = await fetchPaymentAccounts(supabase);
 
   const limit = profile?.credit_limit_pesewas ?? 0;
   const owed = profile?.outstanding_balance_pesewas ?? 0;
@@ -158,7 +161,11 @@ export default async function VendorDashboardPage() {
 
   {isApproved && owed > 0 && (
     <div id="pay-balance">
-      <PayBalanceCard outstandingPesewas={owed} defaultPhone={profile?.phone ?? ''} />
+      <PayBalanceCard
+        outstandingPesewas={owed}
+        defaultPhone={profile?.phone ?? ''}
+        paymentAccounts={paymentAccounts}
+      />
     </div>
   )}
 

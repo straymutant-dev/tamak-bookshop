@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { parseEmail } from '@/lib/email';
 import { after } from 'next/server';
 import { sendOrderEmail } from '@/lib/orderEmail';
+import { fetchPaymentAccounts, requirePaymentAccount } from '@/lib/paymentAccounts';
 
 interface CheckoutItem {
   bookId: string;
@@ -48,6 +49,9 @@ export async function submitOrder(formData: FormData) {
   if (!contactName || !contactPhone) throw new Error('Name and phone are required');
   if (!paymentMethod) {
     throw new Error('Choose a payment method');
+  }
+  if (paymentMethod === 'mobile_money' || paymentMethod === 'bank_transfer') {
+    requirePaymentAccount(await fetchPaymentAccounts(supabase), paymentMethod);
   }
 
   // Pickup or delivery. Delivery needs an exact location; notes for the rider

@@ -1331,7 +1331,7 @@ body {
 .site-logo-pattern__item {
   display: block;
   aspect-ratio: 5564 / 1336;
-  background-image: url("/images/logo.png");
+  background-image: url("/images/logo.webp");
   background-repeat: no-repeat;
   background-size: contain;
   opacity: 0.085;

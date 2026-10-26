@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { normalizeGhanaPhone } from '@/lib/phone';
 import { after } from 'next/server';
 import { sendOrderEmail } from '@/lib/orderEmail';
+import { fetchPaymentAccounts, requirePaymentAccount } from '@/lib/paymentAccounts';
 
 // Pickup or delivery from the checkout form. Delivery needs an exact location;
 // notes for the rider are optional. Pickup stores no address.
@@ -175,6 +176,9 @@ export async function submitVendorOrderImmediatePayment(formData: FormData) {
   );
   if (!paymentMethod) {
     throw new Error('Choose a payment method');
+  }
+  if (paymentMethod === 'mobile_money' || paymentMethod === 'bank_transfer') {
+    requirePaymentAccount(await fetchPaymentAccounts(supabase), paymentMethod);
   }
   const paymentReference = String(formData.get('paymentReference') ?? '').trim() || null;
 

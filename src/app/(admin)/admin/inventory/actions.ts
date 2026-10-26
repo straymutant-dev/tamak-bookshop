@@ -7,6 +7,7 @@ import { ghsToPesewas } from '@/lib/currency';
 import { CLASS_LEVELS, type ClassLevel } from '@/lib/types';
 import type { Json } from '@/lib/database.types';
 import type { ChangeSet } from '@/lib/bookChanges';
+import sharp from 'sharp';
 
 function isClassLevel(value: string): value is ClassLevel {
   return (CLASS_LEVELS as readonly string[]).includes(value);
@@ -36,21 +37,31 @@ async function assertAdmin() {
   return user.id;
 }
 
-const COVER_EXTENSION_BY_TYPE: Record<string, string> = {
-  'image/jpeg': 'jpg',
-  'image/png': 'png',
-};
-
 async function uploadCoverIfProvided(bookId: string, file: File | null) {
   if (!file || file.size === 0) return undefined;
+  if (file.size > 4 * 1024 * 1024) throw new Error('Cover image must be 4 MB or smaller');
+  if (file.type !== 'image/jpeg' && file.type !== 'image/png') {
+    throw new Error('Cover image must be a JPEG or PNG');
+  }
+
+  const input = Buffer.from(await file.arrayBuffer());
+  const image = sharp(input, { limitInputPixels: 40_000_000 });
+  const metadata = await image.metadata();
+  if (metadata.format !== 'jpeg' && metadata.format !== 'png') {
+    throw new Error('Cover image is not a valid JPEG or PNG');
+  }
 
   const service = createServiceRoleClient();
-  const ext = COVER_EXTENSION_BY_TYPE[file.type] || file.name.split('.').pop() || 'jpg';
-  const path = `${bookId}/${Date.now()}.${ext}`;
+  const path = `${bookId}/${Date.now()}.webp`;
+  const optimized = await image
+    .rotate()
+    .resize({ width: 1600, height: 2400, fit: 'inside', withoutEnlargement: true })
+    .webp({ quality: 92, effort: 5 })
+    .toBuffer();
 
-  const { error } = await service.storage.from('book-covers').upload(path, file, {
+  const { error } = await service.storage.from('book-covers').upload(path, optimized, {
     upsert: true,
-    contentType: file.type,
+    contentType: 'image/webp',
   });
 
   if (error) throw new Error(`Cover upload failed: ${error.message}`);

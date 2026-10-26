@@ -6,6 +6,7 @@ import { useCart } from '@/lib/cart/CartContext';
 import { formatGHS } from '@/lib/currency';
 import { submitVendorOrder, submitVendorOrderImmediatePayment } from './actions';
 import PaymentInstructions from '@/components/payments/PaymentInstructions';
+import PaymentAccountList from '@/components/payments/PaymentAccountList';
 import type { PaymentAccount } from '@/lib/paymentTypes';
 
 type Method = 'credit' | 'cash' | 'mobile_money' | 'bank_transfer' | 'cheque';
@@ -52,6 +53,11 @@ export default function VendorCartClient({
   const [deliveryNotes, setDeliveryNotes] = useState('');
 
   const creditOk = availableCreditPesewas > 0 && totalPesewas <= availableCreditPesewas;
+  const availableMethods = (Object.keys(METHOD_LABEL) as Method[]).filter(
+    (candidate) =>
+      (candidate !== 'mobile_money' && candidate !== 'bank_transfer') ||
+      paymentAccounts.some((account) => account.kind === candidate)
+  );
   const chosen: Method = method ?? (creditOk ? 'credit' : 'cash');
   const useCredit = chosen === 'credit';
   const overLimit = useCredit && !creditOk;
@@ -263,7 +269,7 @@ export default function VendorCartClient({
           {vendorApproved && (
             <div className="mb-4 flex flex-col gap-3 text-sm">
               <span className="text-ink">Payment method</span>
-              {(Object.keys(METHOD_LABEL) as Method[]).map((m) => {
+              {availableMethods.map((m) => {
                 const disabled = m === 'credit' && !creditOk;
                 return (
                   <label
@@ -295,10 +301,13 @@ export default function VendorCartClient({
               })}
 
               {(chosen === 'mobile_money' || chosen === 'bank_transfer') && (
-                <p className="rounded-md bg-surface-cream px-3 py-2 text-xs text-ink-muted">
-                  After you place the order you&rsquo;ll see where to pay. Use your order number as the payment
-                  reference, then enter the transaction ID.
-                </p>
+                <div className="rounded-md border border-border-beige bg-surface-cream p-3">
+                  <p className="text-xs font-medium text-ink">Pay Tamak Bookshop using this payment method</p>
+                  <PaymentAccountList accounts={paymentAccounts.filter((account) => account.kind === chosen)} />
+                  <p className="mt-2 text-xs text-ink-muted">
+                    After placing your order, use its order number as the payment reference, then enter the transaction ID.
+                  </p>
+                </div>
               )}
               {chosen === 'cheque' && (
                 <input

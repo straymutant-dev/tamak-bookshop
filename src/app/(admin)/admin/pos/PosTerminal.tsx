@@ -20,6 +20,8 @@ import {
 } from '@/lib/offline/db';
 import { syncOutbox } from '@/lib/offline/sync';
 import { useOnline, useOutbox } from '@/lib/offline/hooks';
+import type { PaymentAccount } from '@/lib/paymentTypes';
+import PaymentAccountList from '@/components/payments/PaymentAccountList';
 
 type Book = CachedBook;
 type PayMethod = 'cash' | 'mobile_money' | 'bank_transfer';
@@ -56,7 +58,15 @@ function toSaleResult(r: OutboxSale): SaleResult {
   };
 }
 
-export default function PosTerminal({ books, cashierName }: { books: Book[]; cashierName: string }) {
+export default function PosTerminal({
+  books,
+  cashierName,
+  paymentAccounts,
+}: {
+  books: Book[];
+  cashierName: string;
+  paymentAccounts: PaymentAccount[];
+}) {
   const router = useRouter();
   const online = useOnline();
   const outbox = useOutbox();
@@ -75,6 +85,11 @@ export default function PosTerminal({ books, cashierName }: { books: Book[]; cas
   const [cache, setCache] = useState<{ source: Book[]; list: Book[] } | null>(null);
   // When the catalogue on screen was loaded. Sales that reached the server after this are not in its stock numbers yet.
   const [snapshotAt, setSnapshotAt] = useState('');
+  const availablePaymentMethods = PAY_METHODS.filter(
+    (candidate) =>
+      (candidate.value !== 'mobile_money' && candidate.value !== 'bank_transfer') ||
+      paymentAccounts.some((account) => account.kind === candidate.value)
+  );
 
   // ---- sync -------------------------------------------------------------
   const runSync = useCallback(async () => {
@@ -463,13 +478,20 @@ export default function PosTerminal({ books, cashierName }: { books: Book[]; cas
 
           <div className="mb-3 flex flex-col gap-1 text-sm">
             Payment method
-            {PAY_METHODS.map((m) => (
+            {availablePaymentMethods.map((m) => (
               <label key={m.value} className="flex items-center gap-2 text-sm text-ink">
                 <input type="radio" checked={paymentMethod === m.value} onChange={() => setPaymentMethod(m.value)} />
                 {m.label}
               </label>
             ))}
           </div>
+
+          {(paymentMethod === 'mobile_money' || paymentMethod === 'bank_transfer') && (
+            <div className="mb-3 rounded-md border border-border-beige bg-surface-cream p-3">
+              <p className="text-xs font-medium text-ink">Payment account for this method</p>
+              <PaymentAccountList accounts={paymentAccounts.filter((account) => account.kind === paymentMethod)} />
+            </div>
+          )}
 
           {(paymentMethod === 'mobile_money' || paymentMethod === 'bank_transfer') && (
             <label className="mb-3 flex flex-col gap-1 text-sm">

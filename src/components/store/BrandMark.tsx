@@ -20,8 +20,13 @@ export default function BrandMark({ className = 'h-9' }: { className?: string })
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src="/images/logo.png"
+      src="/images/logo.webp"
       alt="Tamak Bookshop"
+      width={1800}
+      height={432}
+      loading="eager"
+      fetchPriority="high"
+      decoding="async"
       className={`w-auto shrink-0 object-contain ${className}`}
       onError={() => setFailed(true)}
     />

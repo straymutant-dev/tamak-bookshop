@@ -9,6 +9,8 @@ import { logReceiptPrint } from '@/lib/actions/receipts';
 import ImageWithSkeleton from '@/components/ui/ImageWithSkeleton';
 import Receipt, { type SaleResult } from '../Receipt';
 import { submitVendorPosSale } from './actions';
+import type { PaymentAccount } from '@/lib/paymentTypes';
+import PaymentAccountList from '@/components/payments/PaymentAccountList';
 
 interface Book {
   id: string;
@@ -52,10 +54,12 @@ export default function VendorPosTerminal({
   books,
   vendors,
   cashierName,
+  paymentAccounts,
 }: {
   books: Book[];
   vendors: VendorAccount[];
   cashierName: string;
+  paymentAccounts: PaymentAccount[];
 }) {
   const [search, setSearch] = useState('');
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -100,7 +104,11 @@ export default function VendorPosTerminal({
 
   const totalPesewas = cart.reduce((sum, l) => sum + l.unitPricePesewas * l.quantity, 0);
 
-  const methods: Method[] = ['credit', 'cash', 'mobile_money', 'bank_transfer'];
+  const methods = (['credit', 'cash', 'mobile_money', 'bank_transfer'] as Method[]).filter(
+    (candidate) =>
+      (candidate !== 'mobile_money' && candidate !== 'bank_transfer') ||
+      paymentAccounts.some((account) => account.kind === candidate)
+  );
   const needsRef = method === 'mobile_money' || method === 'bank_transfer';
   const walkinPhoneOk = !!normalizeGhanaPhone(walkinPhone);
   const overCredit = method === 'credit' && vendor !== null && totalPesewas > availableCredit;
@@ -407,6 +415,13 @@ export default function VendorPosTerminal({
             </label>
           ))}
         </div>
+
+        {(method === 'mobile_money' || method === 'bank_transfer') && (
+          <div className="mb-3 rounded-md border border-border-beige bg-surface-cream p-3">
+            <p className="text-xs font-medium text-ink">Payment account for this method</p>
+            <PaymentAccountList accounts={paymentAccounts.filter((account) => account.kind === method)} />
+          </div>
+        )}
 
         {method === 'credit' && customerType === 'walkin' && (
           <p className="mb-3 text-xs text-ink-muted">

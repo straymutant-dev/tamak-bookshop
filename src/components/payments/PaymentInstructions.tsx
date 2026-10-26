@@ -5,6 +5,7 @@ import { useState, useTransition } from 'react';
 import { formatGHS } from '@/lib/currency';
 import { reportPayment } from '@/lib/actions/payments';
 import type { PaymentAccount } from '@/lib/paymentTypes';
+import PaymentAccountList from './PaymentAccountList';
 
 /**
  * Tells the customer exactly where to pay and what to write as the reference
@@ -34,17 +35,20 @@ export default function PaymentInstructions({
   const [reference, setReference] = useState(currentReference ?? '');
   const [reported, setReported] = useState(Boolean(reportedAt));
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState<string | null>(null);
+  const [copiedOrderNumber, setCopiedOrderNumber] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const matching = accounts.filter((a) => a.kind === method);
   const needsReference = method !== 'cash';
 
-  function copy(text: string, key: string) {
-    navigator.clipboard?.writeText(text).then(() => {
-      setCopied(key);
-      setTimeout(() => setCopied((c) => (c === key ? null : c)), 1500);
-    });
+  async function copyOrderNumber() {
+    try {
+      await navigator.clipboard.writeText(orderNumber);
+      setCopiedOrderNumber(true);
+      window.setTimeout(() => setCopiedOrderNumber(false), 1500);
+    } catch {
+      setError('Could not copy the order number. Please copy it manually.');
+    }
   }
 
   function submit() {
@@ -79,30 +83,8 @@ export default function PaymentInstructions({
           Make the cheque payable to Tamak Bookshop and write{' '}
           <span className="font-medium text-ink">{orderNumber}</span> on the back.
         </p>
-      ) : matching.length === 0 ? (
-        <p className="mt-2 text-xs text-ink-muted">
-          The shop&rsquo;s payment details aren&rsquo;t set up yet. Please contact the shop for where to pay.
-        </p>
       ) : (
-        <div className="mt-3 flex flex-col gap-3">
-          {matching.map((a) => (
-            <div key={a.id} className="rounded-md bg-surface-card p-3">
-              <p className="text-xs text-ink-muted">{a.label}</p>
-              <p className="text-sm font-medium text-ink">{a.accountName}</p>
-              <div className="flex items-center gap-3">
-                <p className="text-base font-semibold tracking-wide text-ink">{a.accountNumber}</p>
-                <button
-                  type="button"
-                  onClick={() => copy(a.accountNumber, a.id)}
-                  className="text-xs text-brand-green hover:underline"
-                >
-                  {copied === a.id ? 'Copied' : 'Copy'}
-                </button>
-              </div>
-              {a.details && <p className="mt-1 text-xs text-ink-muted">{a.details}</p>}
-            </div>
-          ))}
-        </div>
+        <PaymentAccountList accounts={matching} />
       )}
 
       {method !== 'cheque' && (
@@ -113,10 +95,10 @@ export default function PaymentInstructions({
           </p>
           <button
             type="button"
-            onClick={() => copy(orderNumber, 'order')}
+            onClick={() => void copyOrderNumber()}
             className="mt-1 text-xs text-brand-green hover:underline"
           >
-            {copied === 'order' ? 'Copied' : 'Copy order number'}
+            {copiedOrderNumber ? 'Copied' : 'Copy order number'}
           </button>
         </div>
       )}
