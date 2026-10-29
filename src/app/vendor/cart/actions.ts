@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { normalizeGhanaPhone } from '@/lib/phone';
 import { after } from 'next/server';
 import { sendOrderEmail } from '@/lib/orderEmail';
-import { fetchPaymentAccounts, requirePaymentAccount } from '@/lib/paymentAccounts';
+import { runAction } from '@/lib/actionResult';
 
 // Pickup or delivery from the checkout form. Delivery needs an exact location;
 // notes for the rider are optional. Pickup stores no address.
@@ -29,7 +29,7 @@ interface CheckoutItem {
   quantity: number;
 }
 
-export async function submitVendorOrder(formData: FormData) {
+async function placeVendorOrder(formData: FormData) {
   const supabase = await createClient();
 
   const {
@@ -152,7 +152,7 @@ export async function submitVendorOrder(formData: FormData) {
   return { orderId: order.id, orderNumber: order.order_number, totalPesewas: subtotalPesewas };
 }
 
-export async function submitVendorOrderImmediatePayment(formData: FormData) {
+async function placeVendorOrderImmediatePayment(formData: FormData) {
   const supabase = await createClient();
 
   const {
@@ -176,9 +176,6 @@ export async function submitVendorOrderImmediatePayment(formData: FormData) {
   );
   if (!paymentMethod) {
     throw new Error('Choose a payment method');
-  }
-  if (paymentMethod === 'mobile_money' || paymentMethod === 'bank_transfer') {
-    requirePaymentAccount(await fetchPaymentAccounts(supabase), paymentMethod);
   }
   const paymentReference = String(formData.get('paymentReference') ?? '').trim() || null;
 
@@ -258,4 +255,14 @@ export async function submitVendorOrderImmediatePayment(formData: FormData) {
   after(() => sendOrderEmail(order.id, 'placed'));
 
   return { orderId: order.id, orderNumber: order.order_number, totalPesewas: subtotalPesewas };
+}
+
+// The two functions people call. They return { ok: true, ... } or { ok: false, error } so the page can show
+// the real message in production (see lib/actionResult.ts).
+export async function submitVendorOrder(formData: FormData) {
+  return runAction(() => placeVendorOrder(formData));
+}
+
+export async function submitVendorOrderImmediatePayment(formData: FormData) {
+  return runAction(() => placeVendorOrderImmediatePayment(formData));
 }

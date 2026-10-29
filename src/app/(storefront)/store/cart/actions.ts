@@ -3,16 +3,16 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { parseEmail } from '@/lib/email';
+import { runAction } from '@/lib/actionResult';
 import { after } from 'next/server';
 import { sendOrderEmail } from '@/lib/orderEmail';
-import { fetchPaymentAccounts, requirePaymentAccount } from '@/lib/paymentAccounts';
 
 interface CheckoutItem {
   bookId: string;
   quantity: number;
 }
 
-export async function submitOrder(formData: FormData) {
+async function placeOrder(formData: FormData) {
   const supabase = await createClient();
 
   const {
@@ -49,9 +49,6 @@ export async function submitOrder(formData: FormData) {
   if (!contactName || !contactPhone) throw new Error('Name and phone are required');
   if (!paymentMethod) {
     throw new Error('Choose a payment method');
-  }
-  if (paymentMethod === 'mobile_money' || paymentMethod === 'bank_transfer') {
-    requirePaymentAccount(await fetchPaymentAccounts(supabase), paymentMethod);
   }
 
   // Pickup or delivery. Delivery needs an exact location; notes for the rider
@@ -146,4 +143,10 @@ export async function submitOrder(formData: FormData) {
   after(() => sendOrderEmail(order.id, 'placed'));
 
   return { orderId: order.id, orderNumber: order.order_number, totalPesewas };
+}
+
+// What the checkout page calls. Returns { ok: true, ... } or { ok: false, error } so the real message shows in
+// production (see lib/actionResult.ts).
+export async function submitOrder(formData: FormData) {
+  return runAction(() => placeOrder(formData));
 }

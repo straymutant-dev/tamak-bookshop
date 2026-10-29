@@ -1,5 +1,4 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
-// Path: src/app/(storefront)/store/cart/ClientCartPage.tsx
 'use client';
 
 import { useState, useTransition } from 'react';
@@ -7,7 +6,6 @@ import { useCart } from '@/lib/cart/CartContext';
 import { formatGHS } from '@/lib/currency';
 import { submitOrder } from './actions';
 import PaymentInstructions from '@/components/payments/PaymentInstructions';
-import PaymentAccountList from '@/components/payments/PaymentAccountList';
 import type { PaymentAccount } from '@/lib/paymentTypes';
 import EmptyState from '@/components/ui/EmptyState';
 import { ShoppingBag } from 'lucide-react';
@@ -52,11 +50,6 @@ export default function ClientCartPage({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<PlacedOrder | null>(null);
-  const availablePaymentMethods = PAY_METHODS.filter(
-    (candidate) =>
-      (candidate.value !== 'mobile_money' && candidate.value !== 'bank_transfer') ||
-      paymentAccounts.some((account) => account.kind === candidate.value)
-  );
 
   const payLabel = (value: string, label: string) =>
     value === 'cash' ? (fulfillment === 'delivery' ? 'Cash on delivery' : 'Cash on pickup') : label;
@@ -77,6 +70,10 @@ export default function ClientCartPage({
     startTransition(async () => {
       try {
         const result = await submitOrder(formData);
+        if (!result.ok) {
+          setError(result.error);
+          return;
+        }
         setConfirmation({
           orderId: result.orderId,
           orderNumber: result.orderNumber,
@@ -273,7 +270,7 @@ export default function ClientCartPage({
 
             <div className="flex flex-col gap-1 text-sm">
               Payment method
-              {availablePaymentMethods.map((m) => (
+              {PAY_METHODS.map((m) => (
                 <label key={m.value} className="flex items-center gap-2 text-sm text-ink">
                   <input
                     type="radio"
@@ -287,13 +284,10 @@ export default function ClientCartPage({
             </div>
 
             {(paymentMethod === 'mobile_money' || paymentMethod === 'bank_transfer') && (
-              <div className="rounded-md border border-border-beige bg-surface-cream p-3">
-                <p className="text-xs font-medium text-ink">Pay Tamak Bookshop using this payment method</p>
-                <PaymentAccountList accounts={paymentAccounts.filter((account) => account.kind === paymentMethod)} />
-                <p className="mt-2 text-xs text-ink-muted">
-                  After placing your order, use its order number as the payment reference, then enter the transaction ID.
-                </p>
-              </div>
+              <p className="rounded-md bg-surface-cream px-3 py-2 text-xs text-ink-muted">
+                After you place the order you&rsquo;ll see exactly where to pay. Use your order number as the payment
+                reference, then enter the transaction ID.
+              </p>
             )}
 
             <button

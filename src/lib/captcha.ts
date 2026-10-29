@@ -1,5 +1,4 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
-// Path: src/lib/captcha.ts
 // Small helpers for Cloudflare Turnstile + Supabase CAPTCHA protection.
 // Supabase checks the token itself (the Turnstile secret key lives in the
 // Supabase dashboard, not in this app), so we only need to pass it along.
