@@ -8,6 +8,7 @@ import { formatGHS } from '@/lib/currency';
 import UserAvatar from '@/components/ui/UserAvatar';
 import { setVendorCreditLimit, setVendorStatus } from './actions';
 import { useToast } from '@/components/ui/ToastContext';
+import VendorStatementPreview from '@/components/admin/VendorStatementPreview';
 
 const STATUS_STYLES: Record<string, string> = {
   pending: 'bg-accent-gold/20 text-accent-gold',
@@ -134,6 +135,11 @@ export default function VendorRow({ vendor, isFirst }: { vendor: VendorProfile; 
           <Link href={`/admin/vendors/${vendor.id}`} className="text-ink hover:text-brand-green">
             Orders &amp; balance →
           </Link>
+          <VendorStatementPreview
+            vendorId={vendor.id}
+            label="Preview unpaid books (PDF)"
+            className="inline-flex items-center gap-1.5 text-ink transition-colors hover:text-brand-green focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green"
+          />
           {vendor.vendor_status !== 'approved' && (
             <button onClick={() => handleStatus('approved')} disabled={isPending} className="text-brand-green">
               Approve

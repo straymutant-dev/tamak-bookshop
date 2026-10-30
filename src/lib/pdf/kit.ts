@@ -178,7 +178,15 @@ export class PdfKit {
       const x = MARGIN + i * (w + gap);
       this.rect(x, this.y - h, w, h, C.white, C.line);
       this.text(s.label, x + 10, this.y - 15, 7.5, this.bold, C.muted);
-      this.text(this.fit(s.value, this.bold, 15, w - 16), x + 10, this.y - 35, 15, this.bold, s.color ?? C.green);
+      const value = this.clean(s.value);
+      let valueSize = 15;
+      while (
+        valueSize > 7 &&
+        this.bold.widthOfTextAtSize(value, valueSize) > w - 16
+      ) {
+        valueSize -= 0.5;
+      }
+      this.text(value, x + 10, this.y - 35, valueSize, this.bold, s.color ?? C.green);
     });
     this.y -= h + 16;
   }

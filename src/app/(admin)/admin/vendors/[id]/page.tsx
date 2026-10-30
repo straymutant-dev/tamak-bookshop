@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { formatGHS } from '@/lib/currency';
 import StatRow from '@/components/admin/StatRow';
 import VendorLimitForm from './VendorLimitForm';
+import VendorStatementPreview from '@/components/admin/VendorStatementPreview';
 
 const ORDER_STATUS_LABEL: Record<string, string> = {
   paid: 'Paid',
@@ -83,6 +84,11 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ i
         <span className="rounded-full bg-surface-cream px-2 py-1 text-xs font-medium capitalize text-ink-muted">
           {vendor.vendor_status}
         </span>
+        <VendorStatementPreview
+          vendorId={vendor.id}
+          label="Preview unpaid books (PDF)"
+          className="ml-auto inline-flex items-center gap-2 rounded-md border border-brand-green px-3 py-1.5 text-xs font-medium text-brand-green transition-colors hover:bg-brand-green hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green"
+        />
       </div>
       <p className="mb-6 text-sm text-ink-muted">
         {vendor.full_name}

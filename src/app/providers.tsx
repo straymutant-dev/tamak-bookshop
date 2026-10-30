@@ -9,7 +9,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ToastProvider>
       <ConfirmProvider>
-        <CartProvider>{children}</CartProvider>
+        <CartProvider>
+          {children}
+        </CartProvider>
       </ConfirmProvider>
     </ToastProvider>
   );

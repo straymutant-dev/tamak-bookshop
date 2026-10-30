@@ -13,6 +13,8 @@ export interface StatementItem {
   quantity: number;
   unitPesewas: number;
   linePesewas: number;
+  paidPesewas: number;
+  remainingPesewas: number;
 }
 
 export interface StatementOrder {
@@ -118,6 +120,7 @@ export function buildStatement(input: {
     const remaining = net - paid;
     if (remaining <= 0) continue;
 
+    let itemPaymentPool = paid;
     const ageDays = Math.max(0, Math.floor((now.getTime() - new Date(o.created_at).getTime()) / day));
     unpaid.push({
       id: o.id,
@@ -129,12 +132,19 @@ export function buildStatement(input: {
       returnedPesewas: o.credit_returned_pesewas ?? 0,
       paidPesewas: paid,
       remainingPesewas: remaining,
-      items: (o.order_items ?? []).map((i) => ({
-        title: i.books?.title ?? 'Book',
-        quantity: i.quantity,
-        unitPesewas: i.unit_price_pesewas,
-        linePesewas: i.line_total_pesewas,
-      })),
+      items: (o.order_items ?? []).map((i) => {
+        const linePesewas = i.line_total_pesewas;
+        const paidPesewas = Math.min(linePesewas, itemPaymentPool);
+        itemPaymentPool = Math.max(0, itemPaymentPool - paidPesewas);
+        return {
+          title: i.books?.title ?? 'Book',
+          quantity: i.quantity,
+          unitPesewas: i.unit_price_pesewas,
+          linePesewas,
+          paidPesewas,
+          remainingPesewas: linePesewas - paidPesewas,
+        };
+      }),
     });
   }
 

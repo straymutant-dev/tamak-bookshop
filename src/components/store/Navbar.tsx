@@ -56,6 +56,7 @@ export default function Navbar({
 
   const isActive = (href: string) => {
     const linkPath = new URL(href, 'https://tamak.local').pathname;
+    if (linkPath === '/store') return pathname === '/store';
     return pathname === linkPath || (linkPath !== '/' && pathname.startsWith(`${linkPath}/`));
   };
 
