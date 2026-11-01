@@ -3,6 +3,7 @@
 
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
+import { ArrowRight, CheckCircle2, Pencil, Snowflake } from 'lucide-react';
 import type { VendorProfile } from '@/lib/types';
 import { formatGHS } from '@/lib/currency';
 import UserAvatar from '@/components/ui/UserAvatar';
@@ -114,10 +115,13 @@ export default function VendorRow({ vendor, isFirst }: { vendor: VendorProfile; 
               </form>
             ) : (
               <button
+                type="button"
                 onClick={() => setEditingLimit(true)}
-                className="text-ink underline decoration-dotted underline-offset-4 hover:text-brand-green"
+                className="inline-flex items-center gap-1.5 text-ink underline decoration-dotted underline-offset-4 hover:text-brand-green"
+                title="Edit credit limit"
               >
-                {vendor.credit_limit_pesewas === 0 ? 'Set limit' : formatGHS(vendor.credit_limit_pesewas)}
+                <Pencil size={14} aria-hidden="true" />
+                <span>{vendor.credit_limit_pesewas === 0 ? 'Set limit' : formatGHS(vendor.credit_limit_pesewas)}</span>
               </button>
             )}
           </div>
@@ -131,9 +135,10 @@ export default function VendorRow({ vendor, isFirst }: { vendor: VendorProfile; 
           </div>
         </div>
 
-        <div className="flex gap-3 text-xs">
-          <Link href={`/admin/vendors/${vendor.id}`} className="text-ink hover:text-brand-green">
-            Orders &amp; balance →
+        <div className="flex flex-wrap items-center gap-3 text-xs">
+          <Link href={`/admin/vendors/${vendor.id}`} className="inline-flex items-center gap-1.5 text-ink hover:text-brand-green">
+            <span>Orders &amp; balance</span>
+            <ArrowRight size={15} aria-hidden="true" />
           </Link>
           <VendorStatementPreview
             vendorId={vendor.id}
@@ -141,13 +146,25 @@ export default function VendorRow({ vendor, isFirst }: { vendor: VendorProfile; 
             className="inline-flex items-center gap-1.5 text-ink transition-colors hover:text-brand-green focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green"
           />
           {vendor.vendor_status !== 'approved' && (
-            <button onClick={() => handleStatus('approved')} disabled={isPending} className="text-brand-green">
-              Approve
+            <button
+              type="button"
+              onClick={() => handleStatus('approved')}
+              disabled={isPending}
+              className="inline-flex items-center gap-1.5 text-brand-green disabled:opacity-50"
+            >
+              <CheckCircle2 size={15} aria-hidden="true" />
+              <span>Approve</span>
             </button>
           )}
           {vendor.vendor_status !== 'frozen' && (
-            <button onClick={() => handleStatus('frozen')} disabled={isPending} className="text-accent-terracotta">
-              Freeze
+            <button
+              type="button"
+              onClick={() => handleStatus('frozen')}
+              disabled={isPending}
+              className="inline-flex items-center gap-1.5 text-accent-terracotta disabled:opacity-50"
+            >
+              <Snowflake size={15} aria-hidden="true" />
+              <span>Freeze</span>
             </button>
           )}
         </div>

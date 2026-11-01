@@ -4,6 +4,7 @@
 import { useState, useTransition } from 'react';
 import { useToast } from '@/components/ui/ToastContext';
 import { useConfirm } from '@/components/ui/ConfirmContext';
+import ProcessingButton from '@/components/ui/ProcessingButton';
 import {
   createPaymentAccount,
   deletePaymentAccount,
@@ -167,13 +168,14 @@ export default function PaymentAccountsManager({ accounts }: { accounts: Account
           </label>
 
           <div className="flex gap-2">
-            <button
+            <ProcessingButton
               type="submit"
-              disabled={isPending}
+              isProcessing={isPending}
+              processingText="Saving…"
               className="rounded-md bg-brand-green px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
             >
-              {isPending ? 'Saving…' : 'Save'}
-            </button>
+              Save
+            </ProcessingButton>
             <button
               type="button"
               onClick={() => setEditingId(null)}

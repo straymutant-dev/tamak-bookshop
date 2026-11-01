@@ -20,6 +20,15 @@ export async function submitPosSale(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  if (profile?.role !== 'admin' && profile?.role !== 'staff') {
+    throw new Error('Only staff or admin can create POS sales');
+  }
+
   const customerName = String(formData.get('customerName') ?? '').trim() || null;
   const paymentMethod = (['cash', 'mobile_money', 'bank_transfer'] as const).find(
     (m) => m === formData.get('paymentMethod'),
@@ -66,64 +75,23 @@ export async function submitPosSale(formData: FormData) {
     };
   });
 
-  const subtotalPesewas = orderItems.reduce((sum, i) => sum + i.line_total_pesewas, 0);
-
-  const orderNumber = `TB-POS-${Date.now().toString(36).toUpperCase()}-${crypto
-    .randomUUID()
-    .slice(0, 4)
-    .toUpperCase()}`;
-
-  const { data: order, error: orderError } = await supabase
-    .from('orders')
-    .insert({
-      order_number: orderNumber,
-      order_type: 'counter_pos',
-      staff_id: user.id,
-      user_id: null,
-      contact_name: customerName,
-      payment_method: paymentMethod,
-      payment_reference: paymentReference,
-      subtotal_pesewas: subtotalPesewas,
-      total_pesewas: subtotalPesewas,
-    })
-    .select('id, order_number, created_at')
-    .single();
-
-  if (orderError || !order) throw new Error(orderError?.message ?? 'Failed to create order');
-
-  const { error: itemsError } = await supabase.from('order_items').insert(
-    orderItems.map((item) => ({
-      book_id: item.book_id,
+  const { data: result, error } = await supabase.rpc('create_pos_sale', {
+    p_customer_name: customerName,
+    p_method: paymentMethod,
+    p_reference: paymentReference,
+    p_items: orderItems.map((item) => ({
+      bookId: item.book_id,
       quantity: item.quantity,
-      unit_price_pesewas: item.unit_price_pesewas,
-      line_total_pesewas: item.line_total_pesewas,
-      order_id: order.id,
-    }))
-  );
-  if (itemsError) throw new Error(itemsError.message);
-
-  for (const item of orderItems) {
-    const { error: stockError } = await supabase.rpc('decrement_book_stock', {
-      book_id: item.book_id,
-      qty: item.quantity,
-    });
-    if (stockError) throw new Error(`Stock update failed for "${item.title}": ${stockError.message}`);
-  }
-
-  const { error: auditError } = await supabase.from('audit_logs').insert({
-    staff_id: user.id,
-    action: 'pos_sale_created',
-    entity_type: 'orders',
-    entity_id: order.id,
-    details_json: { orderNumber: order.order_number, totalPesewas: subtotalPesewas, itemCount: orderItems.length },
+    })),
   });
-  if (auditError) console.error('audit log insert failed:', auditError.message);
+  if (error || !result) throw new Error(error?.message ?? 'Failed to create POS sale');
+  const order = result as unknown as { order_id: string; order_number: string; total_pesewas: number };
+  const subtotalPesewas = order.total_pesewas;
 
   return {
-    
-    orderId: order.id,
+    orderId: order.order_id,
     orderNumber: order.order_number,
-    createdAt: order.created_at,
+    createdAt: new Date().toISOString(),
     items: orderItems,
     subtotalPesewas,
     totalPesewas: subtotalPesewas,

@@ -140,6 +140,112 @@ export async function createBook(formData: FormData) {
   revalidatePath('/admin/inventory');
 }
 
+export interface InventoryImportRow {
+  rowNumber: number;
+  title: string;
+  author: string;
+  category: string;
+  subject: string | null;
+  class_level: ClassLevel | null;
+  academic_year: string | null;
+  buying_cost_pesewas: number;
+  customer_price_pesewas: number;
+  vendor_price_pesewas: number;
+  stock_quantity: number;
+  cover_filename: string | null;
+}
+
+export interface InventoryImportResult {
+  rowNumber: number;
+  title: string;
+  status: 'created' | 'duplicate' | 'failed';
+  bookId?: string;
+  error?: string;
+}
+
+export async function importBooks(rows: InventoryImportRow[]): Promise<InventoryImportResult[]> {
+  await assertAdmin();
+  if (!Array.isArray(rows) || rows.length === 0) throw new Error('No books to import');
+  if (rows.length > 500) throw new Error('Import 500 books or fewer at a time');
+
+  for (const row of rows) {
+    if (!row.title?.trim() || !row.author?.trim() || !row.category?.trim()) {
+      throw new Error(`Row ${row.rowNumber}: title, author, and category are required`);
+    }
+    if (row.class_level && !(CLASS_LEVELS as readonly string[]).includes(row.class_level)) {
+      throw new Error(`Row ${row.rowNumber}: invalid class level`);
+    }
+    const prices = [row.buying_cost_pesewas, row.customer_price_pesewas, row.vendor_price_pesewas];
+    if (!prices.every((value) => Number.isInteger(value) && value >= 0)) {
+      throw new Error(`Row ${row.rowNumber}: prices must be zero or positive whole-pesewa amounts`);
+    }
+    if (!Number.isInteger(row.stock_quantity) || row.stock_quantity < 0) {
+      throw new Error(`Row ${row.rowNumber}: stock quantity must be a whole number of zero or more`);
+    }
+  }
+
+  const supabase = await createClient();
+  const { data: existingBooks, error: existingError } = await supabase
+    .from('books')
+    .select('title, author')
+    .eq('is_active', true);
+  if (existingError) throw new Error(existingError.message);
+
+  const existingKeys = new Set(
+    (existingBooks ?? []).map((book) => `${book.title.trim().toLowerCase()}\n${(book.author ?? '').trim().toLowerCase()}`)
+  );
+
+  const results: InventoryImportResult[] = [];
+  for (const row of rows) {
+    const key = `${row.title.trim().toLowerCase()}\n${row.author.trim().toLowerCase()}`;
+    if (existingKeys.has(key)) {
+      results.push({ rowNumber: row.rowNumber, title: row.title, status: 'duplicate' });
+      continue;
+    }
+
+    const id = crypto.randomUUID();
+    const { error } = await supabase.from('books').insert({
+      id,
+      title: row.title,
+      author: row.author,
+      category: row.category,
+      subject: row.subject,
+      ...(row.class_level ? { class_level: row.class_level } : {}),
+      ...(row.academic_year ? { academic_year: row.academic_year } : {}),
+      buying_cost_pesewas: row.buying_cost_pesewas,
+      customer_price_pesewas: row.customer_price_pesewas,
+      vendor_price_pesewas: row.vendor_price_pesewas,
+      stock_quantity: row.stock_quantity,
+    });
+
+    if (error) {
+      results.push({ rowNumber: row.rowNumber, title: row.title, status: 'failed', error: error.message });
+      continue;
+    }
+
+    existingKeys.add(key);
+    results.push({ rowNumber: row.rowNumber, title: row.title, status: 'created', bookId: id });
+  }
+
+  revalidatePath('/admin/inventory');
+  return results;
+}
+
+export async function uploadImportedBookCover(bookId: string, file: File, coverFilename: string) {
+  await assertAdmin();
+  if (!/^[0-9a-fA-F-]{36}$/.test(bookId)) throw new Error('Invalid book');
+
+  const coverUrl = await uploadCoverIfProvided(bookId, file);
+  if (!coverUrl) throw new Error('Invalid cover image');
+
+  const supabase = await createClient();
+  const { error } = await supabase.from('books').update({ cover_image_url: coverUrl }).eq('id', bookId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath('/admin/inventory');
+  return { coverFilename, coverUrl };
+}
+
 export async function updateBook(bookId: string, formData: FormData) {
   await assertAdmin();
   const supabase = await createClient();

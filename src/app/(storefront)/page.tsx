@@ -1,5 +1,11 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
+import type { Metadata } from 'next';
 import Link from 'next/link';
+
+export const metadata: Metadata = {
+  title: 'Books in Kasoa, Ghana',
+  description: 'Shop textbooks, workbooks and storybooks online from Tamak Bookshop, with pickup, delivery and wholesale accounts.',
+};
 import Hero from '@/components/store/Hero';
 import FeaturedBooks from '@/components/store/FeaturedBooks';
 import ValueStrip from '@/components/store/ValueStrip';

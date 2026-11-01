@@ -85,71 +85,21 @@ async function placeVendorOrder(formData: FormData) {
     };
   });
 
-  const subtotalPesewas = orderItems.reduce((sum, i) => sum + i.line_total_pesewas, 0);
+  const operationId = String(formData.get('operationId') ?? crypto.randomUUID());
+  const { data: result, error } = await supabase.rpc('place_vendor_credit_order', {
+    p_client_operation_id: operationId,
+    p_phone: phone,
+    p_fulfillment: fulfillment.type,
+    p_delivery_address: fulfillment.address,
+    p_delivery_notes: fulfillment.notes,
+    p_items: requestedItems.map((item) => ({ bookId: item.bookId, quantity: item.quantity })),
+  });
+  if (error || !result) throw new Error(error?.message ?? 'Failed to create order');
+  const order = result as unknown as { order_id: string; order_number: string; total_pesewas: number };
 
-  // Credit orders still waiting for approval are a promise to buy on credit, so
-  // they count against the limit too. Otherwise a vendor could queue several
-  // orders that together go past their limit.
-  const { data: pendingOrders, error: pendingError } = await supabase
-    .from('orders')
-    .select('total_pesewas')
-    .eq('user_id', user.id)
-    .eq('payment_status', 'credit_pending');
+  after(() => sendOrderEmail(order.order_id, 'placed'));
 
-  if (pendingError) throw new Error(pendingError.message);
-
-  const pendingPesewas = (pendingOrders ?? []).reduce((sum, o) => sum + o.total_pesewas, 0);
-  const availableCredit = Math.max(
-    0,
-    profile.credit_limit_pesewas - profile.outstanding_balance_pesewas - pendingPesewas
-  );
-
-  if (subtotalPesewas > availableCredit) {
-    throw new Error(
-      `This order (${(subtotalPesewas / 100).toFixed(2)} GHS) exceeds your available credit (${(availableCredit / 100).toFixed(2)} GHS)` +
-        (pendingPesewas > 0 ? `, after ${(pendingPesewas / 100).toFixed(2)} GHS of orders still awaiting approval` : '')
-    );
-  }
-
-  const orderNumber = `TB-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 4).toUpperCase()}`;
-
-  const { data: order, error: orderError } = await supabase
-    .from('orders')
-    .insert({
-      order_number: orderNumber,
-      order_type: 'storefront_vendor',
-      user_id: user.id,
-      contact_name: profile.full_name,
-      contact_phone: phone,
-      fulfillment_type: fulfillment.type,
-      delivery_address: fulfillment.address,
-      delivery_notes: fulfillment.notes,
-      payment_method: 'credit',
-      payment_status: 'credit_pending',
-      subtotal_pesewas: subtotalPesewas,
-      total_pesewas: subtotalPesewas,
-    })
-    .select('id, order_number')
-    .single();
-
-  if (orderError || !order) throw new Error(orderError?.message ?? 'Failed to create order');
-
-  const { error: itemsError } = await supabase
-    .from('order_items')
-    .insert(orderItems.map((item) => ({ ...item, order_id: order.id })));
-
-  if (itemsError) throw new Error(itemsError.message);
-
-  if (!profile.phone) await supabase.from('profiles').update({ phone }).eq('id', user.id);
-
-  // Stock is NOT deducted and the vendor's balance is NOT increased here —
-  // this order sits as credit_pending until staff/admin approves it via
-  // /admin/approvals.
-
-  // "We received your order" email to the account's receipt email (never blocks the order).
-  after(() => sendOrderEmail(order.id, 'placed'));
-
-  return { orderId: order.id, orderNumber: order.order_number, totalPesewas: subtotalPesewas };
+  return { orderId: order.order_id, orderNumber: order.order_number, totalPesewas: order.total_pesewas };
 }
 
 async function placeVendorOrderImmediatePayment(formData: FormData) {
@@ -214,47 +164,23 @@ async function placeVendorOrderImmediatePayment(formData: FormData) {
     };
   });
 
-  const subtotalPesewas = orderItems.reduce((sum, i) => sum + i.line_total_pesewas, 0);
-  const orderNumber = `TB-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 4).toUpperCase()}`;
+  const operationId = String(formData.get('operationId') ?? crypto.randomUUID());
+  const { data: result, error } = await supabase.rpc('place_vendor_immediate_order', {
+    p_client_operation_id: operationId,
+    p_phone: phone,
+    p_method: paymentMethod,
+    p_reference: paymentReference,
+    p_fulfillment: fulfillment.type,
+    p_delivery_address: fulfillment.address,
+    p_delivery_notes: fulfillment.notes,
+    p_items: requestedItems.map((item) => ({ bookId: item.bookId, quantity: item.quantity })),
+  });
+  if (error || !result) throw new Error(error?.message ?? 'Failed to create order');
+  const order = result as unknown as { order_id: string; order_number: string; total_pesewas: number };
 
-  const { data: order, error: orderError } = await supabase
-    .from('orders')
-    .insert({
-      order_number: orderNumber,
-      order_type: 'storefront_vendor',
-      user_id: user.id,
-      contact_name: profile.full_name,
-      contact_phone: phone,
-      fulfillment_type: fulfillment.type,
-      delivery_address: fulfillment.address,
-      delivery_notes: fulfillment.notes,
-      payment_method: paymentMethod,
-      payment_reference: paymentReference,
-      // Not "paid" until staff confirm the money arrived (see confirm_vendor_order_payment).
-      payment_status: 'payment_pending',
-      cheque_number: paymentMethod === 'cheque' ? paymentReference : null,
-      cheque_cleared: paymentMethod === 'cheque' ? false : null,
-      subtotal_pesewas: subtotalPesewas,
-      total_pesewas: subtotalPesewas,
-    })
-    .select('id, order_number')
-    .single();
+  after(() => sendOrderEmail(order.order_id, 'placed'));
 
-  if (orderError || !order) throw new Error(orderError?.message ?? 'Failed to create order');
-
-  const { error: itemsError } = await supabase
-    .from('order_items')
-    .insert(orderItems.map((item) => ({ ...item, order_id: order.id })));
-  if (itemsError) throw new Error(itemsError.message);
-
-  if (!profile.phone) await supabase.from('profiles').update({ phone }).eq('id', user.id);
-
-  // Stock is NOT deducted here. It comes out when staff confirm the payment.
-
-  // "We received your order" email to the account's receipt email (never blocks the order).
-  after(() => sendOrderEmail(order.id, 'placed'));
-
-  return { orderId: order.id, orderNumber: order.order_number, totalPesewas: subtotalPesewas };
+  return { orderId: order.order_id, orderNumber: order.order_number, totalPesewas: order.total_pesewas };
 }
 
 // The two functions people call. They return { ok: true, ... } or { ok: false, error } so the page can show

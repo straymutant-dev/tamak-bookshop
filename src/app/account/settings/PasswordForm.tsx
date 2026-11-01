@@ -6,6 +6,7 @@ import PasswordInput from '@/components/ui/PasswordInput';
 import { useToast } from '@/components/ui/ToastContext';
 import { updatePassword } from './actions';
 import Turnstile, { TURNSTILE_ENABLED } from '@/components/ui/Turnstile';
+import ProcessingButton from '@/components/ui/ProcessingButton';
 
 export default function PasswordForm() {
   const [isPending, startTransition] = useTransition();
@@ -43,13 +44,15 @@ export default function PasswordForm() {
 
       <Turnstile onToken={setCaptchaToken} />
 
-      <button
+      <ProcessingButton
         type="submit"
-        disabled={isPending || (TURNSTILE_ENABLED && !captchaToken)}
+        isProcessing={isPending}
+        processingText="Updating…"
+        disabled={TURNSTILE_ENABLED && !captchaToken}
         className="mt-1 self-start rounded-md bg-brand-green px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
       >
-        {isPending ? 'Updating…' : 'Update password'}
-      </button>
+        Update password
+      </ProcessingButton>
     </form>
   );
 }

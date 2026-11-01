@@ -9,6 +9,8 @@ import PasswordInput from '@/components/ui/PasswordInput';
 import OtpInput from '@/components/ui/OtpInput';
 import PasswordStrengthMeter from '@/components/ui/PasswordStrengthMeter';
 import Turnstile, { TURNSTILE_ENABLED } from '@/components/ui/Turnstile';
+import ProcessingButton from '@/components/ui/ProcessingButton';
+import LegalDocumentModal from '@/components/ui/LegalDocumentModal';
 
 export default function RegisterPage() {
   const searchParams = useSearchParams();
@@ -20,6 +22,7 @@ export default function RegisterPage() {
   const [verifyPhone, setVerifyPhone] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [captchaToken, setCaptchaToken] = useState('');
+  const [acceptedLegal, setAcceptedLegal] = useState(false);
   const passwordMismatch = confirmPassword.length > 0 && password !== confirmPassword;
 
   async function handleSubmit(formData: FormData) {
@@ -55,9 +58,9 @@ export default function RegisterPage() {
             <span>Verification code</span>
             <OtpInput name="code" error={Boolean(error)} />
           </div>
-          <button type="submit" className="rounded-md bg-brand-green px-4 py-2 font-medium text-white">
+          <ProcessingButton type="submit" processingText="Verifying…" className="rounded-md bg-brand-green px-4 py-2 font-medium text-white">
             Verify and continue
-          </button>
+          </ProcessingButton>
         </form>
 
         <button
@@ -158,15 +161,32 @@ export default function RegisterPage() {
         </label>
         {passwordMismatch && <p className="text-xs text-red-700">Passwords do not match.</p>}
 
+        <input type="hidden" name="acceptedLegal" value={acceptedLegal ? 'true' : 'false'} />
+        <div className="flex items-start gap-2 text-sm text-ink-muted">
+          <input
+            type="checkbox"
+            checked={acceptedLegal}
+            onChange={(event) => setAcceptedLegal(event.target.checked)}
+            className="mt-0.5 h-4 w-4 accent-brand-green"
+          />
+          <span>
+            I agree to the{' '}
+            <LegalDocumentModal label="Terms of Sale" title="Terms of Sale" href="/terms" className="font-medium text-brand-green hover:underline" />
+            {' '}and{' '}
+            <LegalDocumentModal label="Privacy Policy" title="Privacy Policy" href="/privacy" className="font-medium text-brand-green hover:underline" />.
+          </span>
+        </div>
+
         <Turnstile onToken={setCaptchaToken} />
 
-        <button
+        <ProcessingButton
           type="submit"
-          disabled={passwordMismatch || confirmPassword.length === 0 || (TURNSTILE_ENABLED && !captchaToken)}
+          processingText="Sending code…"
+          disabled={!acceptedLegal || passwordMismatch || confirmPassword.length === 0 || (TURNSTILE_ENABLED && !captchaToken)}
           className="mt-2 rounded-md bg-brand-green px-4 py-2 font-medium text-white disabled:opacity-50"
         >
           {accountType === 'client' ? 'Send verification code' : 'Send code and submit for approval'}
-        </button>
+        </ProcessingButton>
 
         {accountType === 'vendor' && (
           <p className="text-xs text-ink-muted">

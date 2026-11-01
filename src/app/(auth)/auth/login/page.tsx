@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { login } from './actions';
 import PasswordInput from '@/components/ui/PasswordInput';
 import Turnstile from '@/components/ui/Turnstile';
+import ProcessingButton from '@/components/ui/ProcessingButton';
 
 const INPUT_CLASS =
   'rounded-xl border border-brand-sage bg-surface-card px-3.5 py-3 text-sm text-ink outline-none focus:border-brand-green';
@@ -56,9 +57,9 @@ export default async function LoginPage({
 
           <Turnstile />
 
-          <button type="submit" className="mt-2 rounded-xl bg-brand-green px-4 py-3 font-medium text-white">
+          <ProcessingButton type="submit" processingText="Signing in…" className="mt-2 rounded-xl bg-brand-green px-4 py-3 font-medium text-white">
             Sign in
-          </button>
+          </ProcessingButton>
         </form>
 
         <p className="mt-6 text-sm text-ink-muted">

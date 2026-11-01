@@ -7,6 +7,7 @@ import BackButton from './BackButton';
 import ProfileForm from './ProfileForm';
 import PasswordForm from './PasswordForm';
 import SignOutButton from './SignOutButton';
+import DeleteAccountCard from './DeleteAccountCard';
 
 export default async function AccountSettingsPage() {
   const supabase = await createClient();
@@ -21,6 +22,17 @@ export default async function AccountSettingsPage() {
     .select('full_name, phone, contact_email, role, credit_limit_pesewas, outstanding_balance_pesewas')
     .eq('id', user.id)
     .single();
+
+  let pendingCreditOrders = 0;
+  if (profile?.role === 'vendor') {
+    const { count } = await supabase
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('payment_method', 'credit')
+      .eq('payment_status', 'credit_pending');
+    pendingCreditOrders = count ?? 0;
+  }
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
@@ -70,6 +82,14 @@ export default async function AccountSettingsPage() {
                 <span className="text-ink">{formatGHS(profile.outstanding_balance_pesewas ?? 0)}</span>
               </div>
             </section>
+          )}
+
+          {(profile?.role === 'client' || profile?.role === 'vendor') && (
+            <DeleteAccountCard
+              role={profile.role}
+              outstandingPesewas={profile.outstanding_balance_pesewas ?? 0}
+              pendingCreditOrders={pendingCreditOrders}
+            />
           )}
 
           <section className="rounded-md border border-border-beige bg-surface-card p-6 sm:col-span-2">

@@ -10,6 +10,10 @@ import { parseEmail } from '@/lib/email';
 const PHONE_ERROR = 'Enter a valid Ghana phone number, e.g. 024 123 4567.';
 
 async function startRegistration(formData: FormData, role: 'client' | 'vendor') {
+  if (String(formData.get('acceptedLegal') ?? '') !== 'true') {
+    return { error: 'Accept the Terms of Sale and Privacy Policy to continue.' };
+  }
+
   const password = String(formData.get('password') ?? '');
   const fullName = String(formData.get('fullName') ?? '').trim();
   const businessName = String(formData.get('businessName') ?? '').trim();

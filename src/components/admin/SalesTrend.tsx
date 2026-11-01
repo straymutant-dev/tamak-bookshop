@@ -80,12 +80,23 @@ export default function SalesTrend({ points }: { points: SalesTrendPoint[] }) {
   const maxValue = Math.max(...chartPoints.map((point) => point.totalPesewas), 0);
   const scaleMax = maxValue > 0 ? maxValue * 1.15 : 1;
   const slotWidth = plotWidth / Math.max(chartPoints.length, 1);
-  const barWidth = Math.min(range === 'yearly' ? 28 : 36, slotWidth * 0.48);
+  const baseline = CHART_TOP + plotHeight;
   const totalPesewas = chartPoints.reduce((total, point) => total + point.totalPesewas, 0);
   const totalOrders = chartPoints.reduce((total, point) => total + point.orderCount, 0);
   const description = chartPoints
     .map((point) => `${formatDate(point.date)}: ${formatGHS(point.totalPesewas)} from ${point.orderCount} orders`)
     .join('; ');
+
+  const coords = chartPoints.map((point, index) => {
+    const x = CHART_LEFT + slotWidth * index + slotWidth / 2;
+    const y = point.totalPesewas > 0 ? baseline - (point.totalPesewas / scaleMax) * plotHeight : baseline;
+    return { x, y, point };
+  });
+  const linePath = coords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x} ${c.y}`).join(' ');
+  const areaPath =
+    coords.length > 0
+      ? `${linePath} L ${coords[coords.length - 1].x} ${baseline} L ${coords[0].x} ${baseline} Z`
+      : '';
 
   return (
     <section className="mb-8 rounded-2xl border border-border-beige bg-surface-card p-5 sm:p-6">
@@ -129,6 +140,13 @@ export default function SalesTrend({ points }: { points: SalesTrendPoint[] }) {
             aria-label={`Sales trend. ${description}. Total ${formatGHS(totalPesewas)} from ${totalOrders} orders.`}
           >
             <title>{`Sales trend: ${RANGE_LABELS[range].title}`}</title>
+            <defs>
+              <linearGradient id="salesTrendFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--color-brand-green)" stopOpacity="0.28" />
+                <stop offset="100%" stopColor="var(--color-brand-green)" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+
             {Array.from({ length: TICK_COUNT + 1 }, (_, index) => {
               const value = (scaleMax / TICK_COUNT) * index;
               const y = CHART_TOP + plotHeight - (plotHeight / TICK_COUNT) * index;
@@ -142,22 +160,33 @@ export default function SalesTrend({ points }: { points: SalesTrendPoint[] }) {
                     stroke="var(--color-border-beige)"
                     strokeDasharray={index === 0 ? undefined : '4 5'}
                   />
-                  <text
-                    x={CHART_LEFT - 8}
-                    y={y + 4}
-                    textAnchor="end"
-                    fill="var(--color-ink-muted)"
-                    fontSize="11"
-                  >
+                  <text x={CHART_LEFT - 8} y={y + 4} textAnchor="end" fill="var(--color-ink-muted)" fontSize="11">
                     {formatAxisValue(value)}
                   </text>
                 </g>
               );
             })}
+
+            <path d={areaPath} fill="url(#salesTrendFill)" />
+            <path d={linePath} fill="none" stroke="var(--color-brand-green)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+
+            {coords.map(({ x, y, point }) => (
+              <g key={point.date}>
+                <title>{`${formatDate(point.date)}: ${formatGHS(point.totalPesewas)} from ${point.orderCount} orders`}</title>
+                <circle
+                  cx={x}
+                  cy={y}
+                  r={point.totalPesewas > 0 ? 4 : 3}
+                  fill="var(--color-surface-card)"
+                  stroke="var(--color-brand-green)"
+                  strokeWidth="2"
+                  opacity={point.totalPesewas > 0 ? 1 : 0.35}
+                />
+              </g>
+            ))}
+
             {chartPoints.map((point, index) => {
-              const barHeight = (point.totalPesewas / scaleMax) * plotHeight;
-              const x = CHART_LEFT + slotWidth * index + (slotWidth - barWidth) / 2;
-              const y = CHART_TOP + plotHeight - barHeight;
+              const x = CHART_LEFT + slotWidth * index + slotWidth / 2;
               const date = new Date(`${point.date}T00:00:00.000Z`);
               const label =
                 range === 'daily'
@@ -166,31 +195,12 @@ export default function SalesTrend({ points }: { points: SalesTrendPoint[] }) {
                     ? String(date.getUTCDate())
                     : MONTHS[date.getUTCMonth()];
               const showLabel = range !== 'monthly' || index % 5 === 0 || index === chartPoints.length - 1;
+              if (!showLabel) return null;
 
               return (
-                <g key={point.date}>
-                  <title>{`${formatDate(point.date)}: ${formatGHS(point.totalPesewas)} from ${point.orderCount} orders`}</title>
-                  <rect
-                    x={x}
-                    y={point.totalPesewas > 0 ? y : CHART_TOP + plotHeight - 2}
-                    width={barWidth}
-                    height={point.totalPesewas > 0 ? Math.max(barHeight, 2) : 2}
-                    rx="6"
-                    fill="var(--color-brand-green)"
-                    opacity={point.totalPesewas > 0 ? 0.82 : 0.16}
-                  />
-                  {showLabel && (
-                    <text
-                      x={CHART_LEFT + slotWidth * index + slotWidth / 2}
-                      y={CHART_HEIGHT - 14}
-                      textAnchor="middle"
-                      fill="var(--color-ink-muted)"
-                      fontSize="12"
-                    >
-                      {label}
-                    </text>
-                  )}
-                </g>
+                <text key={`label-${point.date}`} x={x} y={CHART_HEIGHT - 14} textAnchor="middle" fill="var(--color-ink-muted)" fontSize="12">
+                  {label}
+                </text>
               );
             })}
           </svg>

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import PasswordInput from '@/components/ui/PasswordInput';
 import { setPassword } from './actions';
+import ProcessingButton from '@/components/ui/ProcessingButton';
 
 export default async function AcceptInvitePage({
   searchParams,
@@ -21,9 +22,14 @@ export default async function AcceptInvitePage({
     .eq('id', user.id)
     .single();
 
-  // only invited staff/admin belong here, and only until they've set a password
-  if (profile?.role !== 'staff' && profile?.role !== 'admin') redirect('/invite-expired');
-  if (profile.invite_accepted_at) redirect('/admin/dashboard');
+  if (!profile || !['client', 'vendor', 'staff', 'admin'].includes(profile.role)) {
+    redirect('/invite-expired');
+  }
+  if (profile.invite_accepted_at) {
+    if (profile.role === 'vendor') redirect('/vendor/dashboard');
+    if (profile.role === 'client') redirect('/account/dashboard');
+    redirect('/admin/dashboard');
+  }
 
   return (
     <div className="mx-auto my-12 w-full max-w-md px-6">
@@ -80,9 +86,9 @@ export default async function AcceptInvitePage({
             />
           </label>
 
-          <button type="submit" className="mt-2 rounded-xl bg-brand-green px-4 py-3 font-medium text-white">
+          <ProcessingButton type="submit" processingText="Setting password…" className="mt-2 rounded-xl bg-brand-green px-4 py-3 font-medium text-white">
             Set password and continue
-          </button>
+          </ProcessingButton>
         </form>
       </div>
     </div>

@@ -4,7 +4,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import type { User } from '@supabase/supabase-js';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { parseEmail } from '@/lib/email';
 import { CAPTCHA_MESSAGE, captchaTokenFrom, isCaptchaError } from '@/lib/captcha';
 
@@ -76,4 +76,53 @@ export async function signOutAction() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect(`/?toast=${encodeURIComponent('Signed out successfully')}`);
+}
+
+export async function deleteOwnAccount(formData: FormData) {
+  const confirmation = String(formData.get('confirmation') ?? '').trim();
+  if (confirmation !== 'DELETE ACCOUNT') throw new Error('Type DELETE ACCOUNT exactly to continue');
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, outstanding_balance_pesewas')
+    .eq('id', user.id)
+    .single();
+
+  if (profile?.role !== 'client' && profile?.role !== 'vendor') {
+    throw new Error('Only client and vendor accounts can delete themselves here');
+  }
+  if (profile.role === 'vendor' && (profile.outstanding_balance_pesewas ?? 0) !== 0) {
+    throw new Error('Delete blocked: pay off the outstanding vendor credit balance first');
+  }
+  if (profile.role === 'vendor') {
+    const { data: pendingOrders } = await supabase
+      .from('orders')
+      .select('total_pesewas')
+      .eq('user_id', user.id)
+      .eq('payment_method', 'credit')
+      .eq('payment_status', 'credit_pending');
+    if ((pendingOrders ?? []).some((order) => (order.total_pesewas ?? 0) > 0)) {
+      throw new Error('Delete blocked: resolve pending vendor credit orders first');
+    }
+  }
+
+  const rpcDelete = supabase.rpc as unknown as (
+    fn: string,
+    args?: Record<string, never>,
+  ) => Promise<{ data: unknown; error: { message: string } | null }>;
+  const { error } = await rpcDelete('delete_own_account');
+  if (error) throw new Error(error.message);
+
+  const service = createServiceRoleClient();
+  const { error: authError } = await service.auth.admin.deleteUser(user.id);
+  if (authError) throw new Error(`Profile deleted but the sign-in could not be removed: ${authError.message}`);
+
+  await supabase.auth.signOut();
+  redirect(`/?toast=${encodeURIComponent('Your account has been deleted')}`);
 }

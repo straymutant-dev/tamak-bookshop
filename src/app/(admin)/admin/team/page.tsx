@@ -2,6 +2,7 @@
 import { createClient } from '@/lib/supabase/server';
 import TeamManager from './TeamManager';
 import StatRow from '@/components/admin/StatRow';
+import ResetProjectPanel from './ResetProjectPanel';
 
 export default async function TeamPage() {
   const supabase = await createClient();
@@ -46,6 +47,7 @@ export default async function TeamPage() {
       )}
 
       <TeamManager admins={admins ?? []} isSuperAdmin={!!me?.is_super_admin} />
+      {!!me?.is_super_admin && <ResetProjectPanel />}
     </div>
   );
 }

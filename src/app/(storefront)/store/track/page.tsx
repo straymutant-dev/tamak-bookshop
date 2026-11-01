@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { formatGHS } from '@/lib/currency';
 import { orderStatusLabel } from '@/lib/orderStatus';
 import PaymentInstructions from '@/components/payments/PaymentInstructions';
+import ProcessingButton from '@/components/ui/ProcessingButton';
 import type { PaymentAccount } from '@/lib/paymentTypes';
 
 interface TrackedOrder {
@@ -84,13 +85,14 @@ export default function TrackOrderPage() {
           Phone used at checkout
           <input name="phone" type="tel" required className="rounded-md border border-brand-sage px-3 py-2" />
         </label>
-        <button
+        <ProcessingButton
           type="submit"
-          disabled={loading}
+          isProcessing={loading}
+          processingText="Looking up…"
           className="mt-2 rounded-md bg-brand-green px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
         >
-          {loading ? 'Looking up…' : 'Track order'}
-        </button>
+          Track order
+        </ProcessingButton>
       </form>
 
       {error && (

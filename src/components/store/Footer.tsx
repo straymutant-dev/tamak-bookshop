@@ -1,12 +1,15 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
 import Link from 'next/link';
 import BrandMark from './BrandMark';
+import LegalDocumentModal from '@/components/ui/LegalDocumentModal';
 
 const FOOTER_LINKS = [
   { label: 'Home', href: '/' },
   { label: 'Books catalog', href: '/store' },
   { label: 'About', href: '/about' },
   { label: 'Track order', href: '/store/track' },
+  { label: 'Privacy Policy', href: '/privacy' },
+  { label: 'Terms of Sale', href: '/terms' },
 ];
 
 const LOGGED_OUT_LINKS = [
@@ -49,8 +52,19 @@ export default function Footer({
           <BrandMark className="h-7 sm:h-8" />
         </Link>
         <nav className="flex flex-wrap gap-x-4 gap-y-1.5 sm:gap-x-6 sm:gap-y-2">
-          {links.map((link) =>
-            crossHostBase ? (
+          {links.map((link) => {
+            if (link.href === '/privacy' || link.href === '/terms') {
+              const documentHref = crossHostBase ? `${crossHostBase}${link.href}` : link.href;
+              return (
+                <LegalDocumentModal
+                  key={link.href}
+                  label={link.label}
+                  title={link.label}
+                  href={documentHref}
+                />
+              );
+            }
+            return crossHostBase ? (
               <a key={link.href} href={`${crossHostBase}${link.href}`} className="hover:text-brand-green">
                 {link.label}
               </a>
@@ -58,13 +72,14 @@ export default function Footer({
               <Link key={link.href} href={link.href} className="hover:text-brand-green">
                 {link.label}
               </Link>
-            )
-          )}
+            );
+          })}
         </nav>
       </div>
 
       <div className="border-t border-border-beige px-6 py-2 text-center text-[10px] text-ink-muted/70 sm:py-3 sm:text-xs">
-        Built by StrayMutant — StrayMutant Development · Ghana, {new Date().getFullYear()}
+        <a href="tel:+233599118131" className="hover:text-brand-green">0599 118 131</a>
+        {' · '}Kasoa, behind old ECG along the Nyanyanu road{' · '}Ghana, {new Date().getFullYear()}
       </div>
     </footer>
   );

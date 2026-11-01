@@ -6,6 +6,7 @@ import PasswordInput from '@/components/ui/PasswordInput';
 import { updateProfile } from './actions';
 import { useToast } from '@/components/ui/ToastContext';
 import Turnstile, { TURNSTILE_ENABLED } from '@/components/ui/Turnstile';
+import ProcessingButton from '@/components/ui/ProcessingButton';
 
 export default function ProfileForm({
   fullName,
@@ -83,13 +84,15 @@ export default function ProfileForm({
 
       <Turnstile onToken={setCaptchaToken} />
 
-      <button
+      <ProcessingButton
         type="submit"
-        disabled={isPending || (TURNSTILE_ENABLED && !captchaToken)}
+        isProcessing={isPending}
+        processingText="Saving…"
+        disabled={TURNSTILE_ENABLED && !captchaToken}
         className="mt-1 self-start rounded-md bg-brand-green px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
       >
-        {isPending ? 'Saving…' : 'Save changes'}
-      </button>
+        Save changes
+      </ProcessingButton>
     </form>
   );
 }

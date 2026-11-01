@@ -9,6 +9,7 @@ import PaymentInstructions from '@/components/payments/PaymentInstructions';
 import type { PaymentAccount } from '@/lib/paymentTypes';
 import EmptyState from '@/components/ui/EmptyState';
 import { ShoppingBag } from 'lucide-react';
+import ProcessingButton from '@/components/ui/ProcessingButton';
 
 
 type Fulfillment = 'pickup' | 'delivery';
@@ -50,6 +51,7 @@ export default function ClientCartPage({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<PlacedOrder | null>(null);
+  const [operationId] = useState(() => crypto.randomUUID());
 
   const payLabel = (value: string, label: string) =>
     value === 'cash' ? (fulfillment === 'delivery' ? 'Cash on delivery' : 'Cash on pickup') : label;
@@ -58,6 +60,7 @@ export default function ClientCartPage({
 
   function handleSubmit(formData: FormData) {
     setError(null);
+    formData.set('operationId', operationId);
     formData.set('paymentMethod', paymentMethod);
     formData.set('fulfillmentType', fulfillment);
     formData.set('deliveryAddress', fulfillment === 'delivery' ? deliveryAddress.trim() : '');
@@ -290,13 +293,15 @@ export default function ClientCartPage({
               </p>
             )}
 
-            <button
+            <ProcessingButton
               type="submit"
-              disabled={isPending || !deliveryOk}
+              isProcessing={isPending}
+              processingText="Placing order…"
+              disabled={!deliveryOk}
               className="mt-2 rounded-md bg-brand-green px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
             >
-              {isPending ? 'Placing order…' : 'Place order'}
-            </button>
+              Place order
+            </ProcessingButton>
             {fulfillment === 'delivery' && !deliveryOk && (
               <p className="text-xs text-accent-terracotta">Enter where we should deliver to.</p>
             )}

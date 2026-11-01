@@ -91,13 +91,45 @@
   100% { transform: translateX(110%) scaleX(0.35); }
 }
 
+.route-progress {
+  position: fixed;
+  z-index: 120;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 3px;
+  pointer-events: none;
+  overflow: hidden;
+  background: rgba(94, 140, 97, 0.12);
+}
+
+.route-progress__bar {
+  display: block;
+  width: 38%;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--color-accent-gold);
+  box-shadow: 0 0 8px rgba(216, 168, 78, 0.55);
+  animation: route-progress-slide 900ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes route-progress-slide {
+  0% { transform: translateX(-110%); }
+  100% { transform: translateX(370%); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .logo-loading__mark,
-  .logo-loading__line::after {
+  .logo-loading__line::after,
+  .route-progress__bar {
     animation: none;
   }
   .logo-loading__line::after {
     transform: scaleX(0.55);
+  }
+  .route-progress__bar {
+    width: 100%;
+    transform: translateX(0);
   }
 }
 

@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import PasswordInput from '@/components/ui/PasswordInput';
 import PasswordStrengthMeter from '@/components/ui/PasswordStrengthMeter';
 import { normalizeGhanaPhone } from '@/lib/phone';
+import ProcessingButton from '@/components/ui/ProcessingButton';
 
 const DASHBOARD_BY_ROLE: Record<string, string> = {
   admin: '/admin/dashboard',
@@ -147,13 +148,14 @@ export default function SetPasswordPage() {
           />
         </label>
 
-        <button
+        <ProcessingButton
           type="submit"
-          disabled={loading}
+          isProcessing={loading}
+          processingText="Saving…"
           className="mt-2 rounded-md bg-brand-green px-4 py-2 font-medium text-white disabled:opacity-50"
         >
-          {loading ? 'Saving…' : isReset ? 'Update password' : 'Set password and continue'}
-        </button>
+          {isReset ? 'Update password' : 'Set password and continue'}
+        </ProcessingButton>
       </form>
     </div>
   );

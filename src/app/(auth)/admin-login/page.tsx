@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import PasswordInput from '@/components/ui/PasswordInput';
 import { adminLogin } from './actions';
 import Turnstile from '@/components/ui/Turnstile';
+import ProcessingButton from '@/components/ui/ProcessingButton';
 
 export const metadata: Metadata = {
   title: 'Staff login',
@@ -39,9 +40,9 @@ export default async function AdminLoginPage({
             <PasswordInput name="password" required className={`${INPUT_CLASS} font-normal`} />
           </label>
           <Turnstile />
-          <button type="submit" className="mt-2 rounded-xl bg-brand-green px-4 py-3 font-medium text-white">
+          <ProcessingButton type="submit" processingText="Signing in…" className="mt-2 rounded-xl bg-brand-green px-4 py-3 font-medium text-white">
             Sign in
-          </button>
+          </ProcessingButton>
         </form>
       </div>
     </div>

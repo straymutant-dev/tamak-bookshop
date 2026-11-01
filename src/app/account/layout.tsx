@@ -1,5 +1,11 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
+import type { Metadata } from 'next';
 import { headers } from 'next/headers';
+
+export const metadata: Metadata = {
+  title: 'My account',
+  robots: { index: false, follow: false },
+};
 import { createClient } from '@/lib/supabase/server';
 import Navbar from '@/components/store/Navbar';
 import Footer from '@/components/store/Footer';

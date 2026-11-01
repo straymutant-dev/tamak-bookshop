@@ -16,6 +16,14 @@ const DASHBOARD_BY_ROLE: Record<string, string> = {
   client: '/account/dashboard',
 };
 
+function safeInternalDestination(value: string): string | null {
+  const destination = value.trim();
+  if (!destination.startsWith('/') || destination.startsWith('//')) return null;
+  if (destination.includes('\\') || destination.includes('\n') || destination.includes('\r')) return null;
+  if (!/^\/[^\s]*$/.test(destination)) return null;
+  return destination;
+}
+
 export async function login(formData: FormData) {
   const raw = String(formData.get('identifier') ?? '').trim();
   const password = String(formData.get('password') ?? '');
@@ -65,12 +73,7 @@ export async function login(formData: FormData) {
     const lockedUntil =
       nextCount >= MAX_FAILED_ATTEMPTS ? new Date(Date.now() + LOCKOUT_MINUTES * 60000).toISOString() : null;
 
-    await service.from('login_attempts').upsert({
-      email: identifier,
-      failed_count: lockedUntil ? 0 : nextCount,
-      locked_until: lockedUntil,
-      last_attempt_at: new Date().toISOString(),
-    });
+    await service.rpc('record_failed_login', { p_identifier: identifier });
 
     const lowerMessage = error?.message?.toLowerCase() ?? '';
     const message = lockedUntil
@@ -104,7 +107,7 @@ export async function login(formData: FormData) {
   await supabase.from('profiles').update({ last_login_at: new Date().toISOString() }).eq('id', data.user!.id);
   const welcomeMessage = `${isFirstLogin ? 'Welcome' : 'Welcome back'}, ${profile?.full_name ?? 'there'}!`;
 
-  const destination = redirectTo || DASHBOARD_BY_ROLE[profile?.role ?? 'client'] || '/store';
+  const destination = safeInternalDestination(redirectTo) ?? DASHBOARD_BY_ROLE[profile?.role ?? 'client'] ?? '/store';
   const separator = destination.includes('?') ? '&' : '?';
   redirect(`${destination}${separator}toast=${encodeURIComponent(welcomeMessage)}`);
 }

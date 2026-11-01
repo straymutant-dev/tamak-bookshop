@@ -3,7 +3,17 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  CheckCircle2,
+  History,
+  PackagePlus,
+  Pencil,
+  RotateCcw,
+  Trash2,
+} from 'lucide-react';
 import type { Book, ClassLevel } from '@/lib/types';
 import { formatGHS } from '@/lib/currency';
 import { INVENTORY_PAGE_SIZE, type InventorySortKey, type SortDirection } from './inventoryQuery';
@@ -14,6 +24,7 @@ import StockAdjustModal from './StockAdjustModal';
 import BookHistoryModal from './BookhistoryModal';
 import ImageWithSkeleton from '@/components/ui/ImageWithSkeleton';
 import AdminFilterDropdown from '@/components/admin/AdminFilterDropdown';
+import InventoryImportModal from './InventoryImportModal';
 
 
 export default function InventoryTable({
@@ -44,6 +55,7 @@ export default function InventoryTable({
   const [editingBook, setEditingBook] = useState<Book | null | 'new'>(null);
   const [stockBook, setStockBook] = useState<Book | null>(null);
   const [historyBook, setHistoryBook] = useState<Book | null>(null);
+  const [showImport, setShowImport] = useState(false);
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [restoringId, setRestoringId] = useState<string | null>(null);
@@ -163,6 +175,13 @@ export default function InventoryTable({
             Download PDF
           </a>
           <button
+            type="button"
+            onClick={() => setShowImport(true)}
+            className="rounded-md border border-brand-sage px-4 py-2 text-sm font-medium text-ink hover:bg-surface-cream"
+          >
+            Import CSV
+          </button>
+          <button
             onClick={() => setEditingBook('new')}
             className="rounded-md bg-brand-green px-4 py-2 text-sm font-medium text-white"
           >
@@ -238,42 +257,69 @@ export default function InventoryTable({
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <div className="flex justify-end gap-3 text-xs">
-                    <button onClick={() => setHistoryBook(book)} className="text-ink-muted">
-                      History
+                  <div className="flex justify-end gap-1 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setHistoryBook(book)}
+                      className="grid h-8 w-8 place-items-center rounded-md text-ink-muted hover:bg-surface-cream hover:text-brand-green"
+                      title="View stock history"
+                      aria-label="View stock history"
+                    >
+                      <History size={17} aria-hidden="true" />
                     </button>
                     {book.is_active && book.status === 'updated' && (
                       <button
+                        type="button"
                         onClick={() => handleReviewed(book.id)}
                         disabled={reviewingId === book.id}
-                        className="text-brand-green disabled:opacity-50"
+                        className="grid h-8 w-8 place-items-center rounded-md text-brand-green hover:bg-brand-green/10 disabled:opacity-50"
+                        title="Mark book as reviewed"
+                        aria-label="Mark book as reviewed"
                       >
-                        {reviewingId === book.id ? 'Saving…' : 'Mark reviewed'}
+                        <CheckCircle2 size={17} aria-hidden="true" />
                       </button>
                     )}
                     {book.is_active ? (
                       <>
-                        <button onClick={() => setStockBook(book)} className="text-brand-green">
-                          Adjust stock
-                        </button>
-                        <button onClick={() => setEditingBook(book)} className="text-accent-gold">
-                          Edit
+                        <button
+                          type="button"
+                          onClick={() => setStockBook(book)}
+                          className="grid h-8 w-8 place-items-center rounded-md text-brand-green hover:bg-brand-green/10"
+                          title="Adjust stock"
+                          aria-label="Adjust stock"
+                        >
+                          <PackagePlus size={17} aria-hidden="true" />
                         </button>
                         <button
+                          type="button"
+                          onClick={() => setEditingBook(book)}
+                          className="grid h-8 w-8 place-items-center rounded-md text-accent-gold hover:bg-accent-gold/10"
+                          title="Edit book"
+                          aria-label="Edit book"
+                        >
+                          <Pencil size={17} aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => handleDelete(book.id)}
                           disabled={deletingId === book.id}
-                          className="text-accent-terracotta disabled:opacity-50"
+                          className="grid h-8 w-8 place-items-center rounded-md text-accent-terracotta hover:bg-accent-terracotta/10 disabled:opacity-50"
+                          title="Delete book"
+                          aria-label="Delete book"
                         >
-                          {deletingId === book.id ? 'Deleting…' : 'Delete'}
+                          <Trash2 size={17} aria-hidden="true" />
                         </button>
                       </>
                     ) : (
                       <button
+                        type="button"
                         onClick={() => handleRestore(book.id)}
                         disabled={restoringId === book.id}
-                        className="text-brand-green disabled:opacity-50"
+                        className="grid h-8 w-8 place-items-center rounded-md text-brand-green hover:bg-brand-green/10 disabled:opacity-50"
+                        title="Restore book"
+                        aria-label="Restore book"
                       >
-                        {restoringId === book.id ? 'Restoring…' : 'Restore'}
+                        <RotateCcw size={17} aria-hidden="true" />
                       </button>
                     )}
                   </div>
@@ -331,6 +377,8 @@ export default function InventoryTable({
       {stockBook && <StockAdjustModal book={stockBook} onClose={() => setStockBook(null)} />}
 
       {historyBook && <BookHistoryModal book={historyBook} onClose={() => setHistoryBook(null)} />}
+
+      {showImport && <InventoryImportModal onClose={() => setShowImport(false)} />}
     </div>
   );
 }

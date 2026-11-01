@@ -6,6 +6,7 @@ import UserAvatar from '@/components/ui/UserAvatar';
 import { inviteAdmin, demoteAdmin } from './actions';
 import { useToast } from '@/components/ui/ToastContext';
 import { useConfirm } from '@/components/ui/ConfirmContext';
+import ProcessingButton from '@/components/ui/ProcessingButton';
 
 interface AdminRow {
   id: string;
@@ -68,27 +69,28 @@ export default function TeamManager({
       )}
 
       {isSuperAdmin && (
-        <form action={handleInvite} className="mb-8 flex max-w-md flex-col gap-2 sm:flex-row">
+        <form action={handleInvite} className="mb-8 grid max-w-2xl grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto]">
           <input
             name="fullName"
             required
             placeholder="Full name"
-            className="w-full rounded-md border border-brand-sage px-3 py-2 text-sm"
+            className="w-full rounded-md border border-brand-sage px-4 py-3 text-base"
           />
           <input
             name="email"
             type="email"
             required
             placeholder="new-admin@example.com"
-            className="w-full rounded-md border border-brand-sage px-3 py-2 text-sm"
+            className="w-full rounded-md border border-brand-sage px-4 py-3 text-base"
           />
-          <button
+          <ProcessingButton
             type="submit"
-            disabled={isPending}
-            className="shrink-0 rounded-md bg-brand-green px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+            isProcessing={isPending}
+            processingText="Sending…"
+            className="rounded-md bg-brand-green px-5 py-3 text-base font-medium text-white disabled:opacity-50"
           >
-            {isPending ? 'Sending…' : 'Send invite'}
-          </button>
+            Send invite
+          </ProcessingButton>
         </form>
       )}
 

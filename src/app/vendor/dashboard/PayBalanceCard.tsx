@@ -8,6 +8,7 @@ import { formatGHS } from '@/lib/currency';
 import { submitRepaymentRequest } from './actions';
 import type { PaymentAccount } from '@/lib/paymentTypes';
 import PaymentAccountList from '@/components/payments/PaymentAccountList';
+import ProcessingButton from '@/components/ui/ProcessingButton';
 
 const METHODS = [
   { value: 'mobile_money', label: 'Mobile Money', refLabel: 'Transaction ID' },

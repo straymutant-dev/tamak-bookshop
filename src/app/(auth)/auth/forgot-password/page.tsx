@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import Turnstile, { TURNSTILE_ENABLED } from '@/components/ui/Turnstile';
 import { CAPTCHA_MESSAGE, isCaptchaError } from '@/lib/captcha';
 import { requestPhoneResetCode, verifyResetCode } from './actions';
+import ProcessingButton from '@/components/ui/ProcessingButton';
 
 const RESEND_SECONDS = 60;
 
@@ -122,21 +123,23 @@ export default function ForgotPasswordPage() {
               className="rounded-md border border-brand-sage px-3 py-2 text-center text-lg tracking-widest"
             />
           </label>
-          <button type="submit" className="rounded-md bg-brand-green px-4 py-2 font-medium text-white">
+          <ProcessingButton type="submit" isProcessing={loading} processingText="Verifying…" className="rounded-md bg-brand-green px-4 py-2 font-medium text-white">
             Verify and choose a new password
-          </button>
+          </ProcessingButton>
         </form>
 
         <form action={handleResend} className="mt-4 flex flex-col gap-2">
           <input type="hidden" name="phone" value={codePhone} />
           <Turnstile onToken={setResendToken} />
-          <button
+          <ProcessingButton
             type="submit"
+            isProcessing={loading}
+            processingText="Resending…"
             disabled={cooldown > 0 || (TURNSTILE_ENABLED && !resendToken)}
             className="self-start text-sm font-medium text-brand-green disabled:text-ink-muted"
           >
             {cooldown > 0 ? `Resend code in ${cooldown}s` : 'Resend code'}
-          </button>
+          </ProcessingButton>
         </form>
 
         <button
@@ -180,13 +183,15 @@ export default function ForgotPasswordPage() {
 
         <Turnstile onToken={setCaptchaToken} />
 
-        <button
+        <ProcessingButton
           type="submit"
-          disabled={loading || (TURNSTILE_ENABLED && !captchaToken)}
+          isProcessing={loading}
+          processingText="Sending…"
+          disabled={TURNSTILE_ENABLED && !captchaToken}
           className="mt-2 rounded-md bg-brand-green px-4 py-2 font-medium text-white disabled:opacity-50"
         >
-          {loading ? 'Sending…' : isEmail ? 'Send reset link' : 'Send code'}
-        </button>
+          {isEmail ? 'Send reset link' : 'Send code'}
+        </ProcessingButton>
       </form>
 
       <p className="mt-6 text-sm text-ink-muted">

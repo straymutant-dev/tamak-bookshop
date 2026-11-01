@@ -715,9 +715,60 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: number;
       };
+      record_failed_login: {
+        Args: { p_identifier: string };
+        Returns: Json;
+      };
       approve_vendor_credit_order: {
         Args: { p_order_id: string; p_fulfillment: Database["public"]["Enums"]["fulfillment_type"] };
         Returns: undefined;
+      };
+      place_storefront_order: {
+        Args: {
+          p_client_operation_id: string;
+          p_contact_name: string;
+          p_contact_phone: string;
+          p_contact_email: string | null;
+          p_method: Database["public"]["Enums"]["pay_method"];
+          p_fulfillment: Database["public"]["Enums"]["fulfillment_type"];
+          p_delivery_address: string | null;
+          p_delivery_notes: string | null;
+          p_items: Json;
+        };
+        Returns: Json;
+      };
+      place_vendor_credit_order: {
+        Args: {
+          p_client_operation_id: string;
+          p_phone: string;
+          p_fulfillment: Database["public"]["Enums"]["fulfillment_type"];
+          p_delivery_address: string | null;
+          p_delivery_notes: string | null;
+          p_items: Json;
+        };
+        Returns: Json;
+      };
+      place_vendor_immediate_order: {
+        Args: {
+          p_client_operation_id: string;
+          p_phone: string;
+          p_method: Database["public"]["Enums"]["pay_method"];
+          p_reference: string | null;
+          p_fulfillment: Database["public"]["Enums"]["fulfillment_type"];
+          p_delivery_address: string | null;
+          p_delivery_notes: string | null;
+          p_items: Json;
+        };
+        Returns: Json;
+      };
+      create_pos_sale: {
+        Args: {
+          p_customer_name: string | null;
+          p_method: Database["public"]["Enums"]["pay_method"];
+          p_reference: string | null;
+          p_items: Json;
+        };
+        Returns: Json;
       };
       confirm_repayment_request: {
         Args: {

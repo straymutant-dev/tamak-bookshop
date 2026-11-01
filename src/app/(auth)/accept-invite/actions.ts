@@ -28,10 +28,20 @@ export async function setPassword(formData: FormData) {
   // so this one update must go through the service role.
   const service = createServiceRoleClient();
   const now = new Date().toISOString();
-  await service
+  const { error: profileError, data: profile } = await service
     .from('profiles')
     .update({ invite_accepted_at: now, last_login_at: now })
-    .eq('id', user.id);
+    .eq('id', user.id)
+    .select('role')
+    .single();
 
+  if (profileError) redirect(`/accept-invite?error=${encodeURIComponent(profileError.message)}`);
+
+  if (profile.role === 'vendor') {
+    redirect(`/vendor/dashboard?toast=${encodeURIComponent('Welcome to Tamak Bookshop!')}`);
+  }
+  if (profile.role === 'client') {
+    redirect(`/account/dashboard?toast=${encodeURIComponent('Welcome to Tamak Bookshop!')}`);
+  }
   redirect(`/admin/dashboard?toast=${encodeURIComponent('Welcome to the team!')}`);
 }

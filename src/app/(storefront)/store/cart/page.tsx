@@ -1,5 +1,12 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+
+export const metadata: Metadata = {
+  title: 'Your cart',
+  description: 'Review books and checkout with Tamak Bookshop.',
+  robots: { index: false, follow: false },
+};
 import { createClient } from '@/lib/supabase/server';
 import { fetchPaymentAccounts } from '@/lib/paymentAccounts';
 import ClientCartPage from './ClientCartPage';

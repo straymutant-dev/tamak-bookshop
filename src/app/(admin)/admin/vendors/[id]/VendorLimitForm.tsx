@@ -5,6 +5,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/ToastContext';
 import { setVendorCreditLimit } from '../actions';
+import ProcessingButton from '@/components/ui/ProcessingButton';
 
 export default function VendorLimitForm({
   vendorId,
@@ -46,13 +47,14 @@ export default function VendorLimitForm({
           className="w-40 rounded-md border border-brand-sage px-3 py-2 text-sm text-ink"
         />
       </label>
-      <button
+      <ProcessingButton
         type="submit"
-        disabled={isPending}
+        isProcessing={isPending}
+        processingText="Saving…"
         className="rounded-md bg-brand-green px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
       >
-        {isPending ? 'Saving…' : 'Save limit'}
-      </button>
+        Save limit
+      </ProcessingButton>
       {error && <p className="w-full text-xs text-red-700">{error}</p>}
     </form>
   );

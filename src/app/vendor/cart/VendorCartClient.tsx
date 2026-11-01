@@ -7,6 +7,7 @@ import { formatGHS } from '@/lib/currency';
 import { submitVendorOrder, submitVendorOrderImmediatePayment } from './actions';
 import PaymentInstructions from '@/components/payments/PaymentInstructions';
 import type { PaymentAccount } from '@/lib/paymentTypes';
+import ProcessingButton from '@/components/ui/ProcessingButton';
 
 type Method = 'credit' | 'cash' | 'mobile_money' | 'bank_transfer' | 'cheque';
 type Fulfillment = 'pickup' | 'delivery';
@@ -46,6 +47,7 @@ export default function VendorCartClient({
   } | null>(null);
   const [method, setMethod] = useState<Method | null>(null);
   const [paymentReference, setPaymentReference] = useState('');
+  const [operationId] = useState(() => crypto.randomUUID());
   const [phone, setPhone] = useState(defaultPhone);
   const [fulfillment, setFulfillment] = useState<Fulfillment>('pickup');
   const [deliveryAddress, setDeliveryAddress] = useState('');
@@ -63,6 +65,7 @@ export default function VendorCartClient({
   function handleSubmit() {
     setError(null);
     const formData = new FormData();
+    formData.set('operationId', operationId);
     formData.set('items', JSON.stringify(items.map((i) => ({ bookId: i.bookId, quantity: i.quantity }))));
     formData.set('contactPhone', phone);
     formData.set('fulfillmentType', fulfillment);
@@ -317,13 +320,16 @@ export default function VendorCartClient({
 
           {error && <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
 
-          <button
+          <ProcessingButton
+            type="button"
             onClick={handleSubmit}
-            disabled={isPending || !vendorApproved || overLimit || phone.trim().length < 9 || !deliveryOk}
+            isProcessing={isPending}
+            processingText="Submitting…"
+            disabled={!vendorApproved || overLimit || phone.trim().length < 9 || !deliveryOk}
             className="w-full rounded-md bg-brand-green px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
-            {isPending ? 'Submitting…' : useCredit ? 'Submit for approval' : 'Place order'}
-          </button>
+            {useCredit ? 'Submit for approval' : 'Place order'}
+          </ProcessingButton>
           {fulfillment === 'delivery' && !deliveryOk && (
             <p className="mt-2 text-xs text-accent-terracotta">Enter where we should deliver to.</p>
           )}

@@ -5,6 +5,7 @@ import { useState, useTransition } from 'react';
 import { formatGHS } from '@/lib/currency';
 import { reportPayment } from '@/lib/actions/payments';
 import type { PaymentAccount } from '@/lib/paymentTypes';
+import ProcessingButton from '@/components/ui/ProcessingButton';
 import PaymentAccountList from './PaymentAccountList';
 
 /**

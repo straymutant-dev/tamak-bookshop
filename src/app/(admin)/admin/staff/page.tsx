@@ -16,7 +16,7 @@ export default async function StaffPage() {
     <div>
       <h1 className="mb-1 text-xl font-semibold text-ink">Staff accounts</h1>
       <p className="mb-6 text-sm text-ink-muted">
-        Invite staff by email, or remove access to move them back to a regular client account.
+        Invite clients, vendors, staff, or admins by email and assign the selected account role.
       </p>
 
       <StatRow stats={[{ label: 'Total staff', value: staff?.length ?? 0 }]} />

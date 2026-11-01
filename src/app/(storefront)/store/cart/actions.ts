@@ -75,74 +75,26 @@ async function placeOrder(formData: FormData) {
   }
   if (!requestedItems.length) throw new Error('Your cart is empty');
 
-  // Re-fetch prices and stock from the DB rather than trusting the client.
-  const bookIds = requestedItems.map((i) => i.bookId);
-  const { data: books, error: booksError } = await supabase
-    .from('books')
-    .select('id, title, customer_price_pesewas, stock_quantity')
-    .in('id', bookIds);
-
-  if (booksError || !books) throw new Error(booksError?.message ?? 'Could not verify cart items');
-
-  const orderItems = requestedItems.map((requested) => {
-    const book = books.find((b) => b.id === requested.bookId);
-    if (!book) throw new Error('One of the items in your cart is no longer available');
-    if (book.stock_quantity < requested.quantity) {
-      throw new Error(`Not enough stock for "${book.title}"`);
-    }
-    const unitPrice = book.customer_price_pesewas;
-    return {
-      book_id: book.id,
-      quantity: requested.quantity,
-      unit_price_pesewas: unitPrice,
-      line_total_pesewas: unitPrice * requested.quantity,
-    };
+  const operationId = String(formData.get('operationId') ?? crypto.randomUUID());
+  const { data: result, error: orderError } = await supabase.rpc('place_storefront_order', {
+    p_client_operation_id: operationId,
+    p_contact_name: contactName,
+    p_contact_phone: contactPhone,
+    p_contact_email: contactEmail,
+    p_method: paymentMethod,
+    p_fulfillment: fulfillmentType,
+    p_delivery_address: deliveryAddress,
+    p_delivery_notes: deliveryNotes,
+    p_items: requestedItems.map((item) => ({ bookId: item.bookId, quantity: item.quantity })),
   });
 
-  const subtotalPesewas = orderItems.reduce((sum, i) => sum + i.line_total_pesewas, 0);
-  const totalPesewas = subtotalPesewas; // no separate delivery/tax modeled yet
-
-  const orderNumber = `TB-${Date.now().toString(36).toUpperCase()}-${crypto
-    .randomUUID()
-    .slice(0, 4)
-    .toUpperCase()}`;
-
-  const { data: order, error: orderError } = await supabase
-    .from('orders')
-    .insert({
-      order_number: orderNumber,
-      order_type: 'storefront_client',
-      user_id: user?.id ?? null,
-      contact_name: contactName,
-      contact_phone: contactPhone,
-      contact_email: contactEmail,
-      payment_method: paymentMethod,
-      payment_reference: paymentReference,
-      // Not "paid" until staff confirm the money arrived (see confirm_vendor_order_payment).
-      payment_status: 'payment_pending',
-      fulfillment_type: fulfillmentType,
-      delivery_address: deliveryAddress,
-      delivery_notes: deliveryNotes,
-      subtotal_pesewas: subtotalPesewas,
-      total_pesewas: totalPesewas,
-    })
-    .select('id, order_number')
-    .single();
-
-  if (orderError || !order) throw new Error(orderError?.message ?? 'Failed to create order');
-
-  const { error: itemsError } = await supabase
-    .from('order_items')
-    .insert(orderItems.map((item) => ({ ...item, order_id: order.id })));
-
-  if (itemsError) throw new Error(itemsError.message);
+  if (orderError || !result) throw new Error(orderError?.message ?? 'Failed to create order');
+  const order = result as unknown as { order_id: string; order_number: string; total_pesewas: number };
 
   // Stock is NOT deducted here: it comes out when staff confirm the payment.
+  after(() => sendOrderEmail(order.order_id, 'placed'));
 
-  // "We received your order" email (sent in the background after the response; skipped if there is no email).
-  after(() => sendOrderEmail(order.id, 'placed'));
-
-  return { orderId: order.id, orderNumber: order.order_number, totalPesewas };
+  return { orderId: order.order_id, orderNumber: order.order_number, totalPesewas: order.total_pesewas };
 }
 
 // What the checkout page calls. Returns { ok: true, ... } or { ok: false, error } so the real message shows in

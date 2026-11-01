@@ -5,7 +5,6 @@ import { redirect } from 'next/navigation';
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { CAPTCHA_MESSAGE, captchaTokenFrom, isCaptchaError } from '@/lib/captcha';
 
-const MAX_FAILED_ATTEMPTS = 6;
 const LOCKOUT_MINUTES = 15;
 
 export async function adminLogin(formData: FormData) {
@@ -42,15 +41,10 @@ export async function adminLogin(formData: FormData) {
   }
 
   if (error || !data.user) {
-    const nextCount = (attempt?.failed_count ?? 0) + 1;
-    const lockedUntil =
-      nextCount >= MAX_FAILED_ATTEMPTS ? new Date(Date.now() + LOCKOUT_MINUTES * 60000).toISOString() : null;
-    await service.from('login_attempts').upsert({
-      email,
-      failed_count: lockedUntil ? 0 : nextCount,
-      locked_until: lockedUntil,
-      last_attempt_at: new Date().toISOString(),
-    });
+    const { data: lockout } = await service.rpc('record_failed_login', { p_identifier: email });
+    const lockedUntil = lockout && typeof lockout === 'object'
+      ? (lockout as Record<string, unknown>).locked_until
+      : null;
     redirect(
       `/admin-login?error=${encodeURIComponent(
         lockedUntil ? `Too many failed attempts. Try again in ${LOCKOUT_MINUTES} minutes.` : error?.message ?? 'Invalid credentials'
