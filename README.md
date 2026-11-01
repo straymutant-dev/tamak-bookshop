@@ -43,6 +43,7 @@ NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon public key>
 SUPABASE_SERVICE_ROLE_KEY=<service role key>   # SECRET: server only
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
+CRON_SECRET=<generate with: openssl rand -base64 32>
 ```
 
 | Variable | Notes |
@@ -50,6 +51,8 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public by design; protected by RLS |
 | `SUPABASE_SERVICE_ROLE_KEY` | Bypasses RLS. Never prefix with `NEXT_PUBLIC_`, never import into client components |
 | `NEXT_PUBLIC_SITE_URL` | Used in signup-confirmation and invite email links. Baked in at build time, so redeploy after changing it |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Public Cloudflare Turnstile site key. Add it to Vercel for production |
+| `CRON_SECRET` | Server-only secret for the protected weekly cache maintenance endpoint. Generate with `openssl rand -base64 32` and add it to Vercel |
 
 Restart the dev server after editing `.env.local`.
 
@@ -137,6 +140,20 @@ pnpm dlx supabase gen types typescript --linked > src/lib/database.types.ts
 ## Deployment
 
 Hosting is **Vercel** (one project, three domains: `tamakbookshop.com`, `www`, and `admin`) with Supabase as the backend. Step-by-step instructions, including DNS, Supabase URL settings, SMTP and email templates, are in `docs/04-DEPLOYMENT-AND-DOMAIN.md`.
+
+## Cookie and storage behaviour
+
+The site uses essential browser storage for authentication, cart operation, security checks and the cookie notice itself. It does not use advertising or optional analytics cookies and therefore does not require a separate cookie-acceptance choice before essential functionality can be used.
+
+The Privacy Policy describes the browser storage and third-party security services used by the platform. Optional tracking, analytics or advertising services must be added and consented separately if they are introduced later.
+
+## Weekly cache maintenance
+
+`vercel.json` schedules `/api/maintenance/cache-refresh` every Sunday at `23:00 UTC`.
+
+The maintenance endpoint first checks the public `/`, `/store`, `/about`, `/terms` and `/privacy` routes. If all routes respond successfully, it revalidates those routes and the root layout in Next.js. This refreshes the deployed CDN/Next.js cache without clearing users' browser data, browser storage, Supabase sessions, carts, orders or uploaded files.
+
+Before deployment, configure `CRON_SECRET` as a server-only Vercel environment variable. Vercel sends the secret as a bearer token to the protected endpoint. Cache maintenance is only activated when the deployed health checks succeed.
 
 ## Documentation
 

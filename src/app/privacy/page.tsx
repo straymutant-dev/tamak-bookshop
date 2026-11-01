@@ -44,6 +44,10 @@ export default function PrivacyPolicyPage() {
             <p>We use service providers necessary to operate the website, authentication, database, storage, payment-record reporting and delivery communications. We do not sell personal information.</p>
           </section>
           <section>
+            <h2 className="mb-2 text-lg font-semibold text-ink">Cookies and browser storage</h2>
+            <p>We use essential cookies and browser storage to keep users signed in, maintain session security, remember shopping-cart contents, and provide Cloudflare Turnstile bot protection. These are necessary for website functionality; we do not set advertising cookies and currently use no optional analytics cookies.</p>
+          </section>
+          <section>
             <h2 className="mb-2 text-lg font-semibold text-ink">Security</h2>
             <p>We restrict access to personal information according to account roles and use authentication and access controls. No online service can guarantee absolute security.</p>
           </section>

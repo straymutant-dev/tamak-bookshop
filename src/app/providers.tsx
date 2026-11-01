@@ -5,6 +5,7 @@ import { CartProvider } from '@/lib/cart/CartContext';
 import { ToastProvider } from '@/components/ui/ToastContext';
 import { ConfirmProvider } from '@/components/ui/ConfirmContext';
 import RouteProgress from '@/components/ui/RouteProgress';
+import CookieNotice from '@/components/ui/CookieNotice';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -12,6 +13,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <ConfirmProvider>
         <CartProvider>
           <RouteProgress />
+          <CookieNotice />
           {children}
         </CartProvider>
       </ConfirmProvider>

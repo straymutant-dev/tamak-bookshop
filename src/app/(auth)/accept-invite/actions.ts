@@ -5,6 +5,10 @@ import { redirect } from 'next/navigation';
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 
 export async function setPassword(formData: FormData) {
+  if (String(formData.get('acceptedLegal') ?? '') !== 'true') {
+    redirect(`/accept-invite?error=${encodeURIComponent('Accept the Terms of Sale and Privacy Policy to continue.')}`);
+  }
+
   const password = String(formData.get('password') ?? '');
   const confirm = String(formData.get('confirm') ?? '');
 

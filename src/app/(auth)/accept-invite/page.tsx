@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import PasswordInput from '@/components/ui/PasswordInput';
 import { setPassword } from './actions';
 import ProcessingButton from '@/components/ui/ProcessingButton';
+import LegalDocumentModal from '@/components/ui/LegalDocumentModal';
 
 export default async function AcceptInvitePage({
   searchParams,
@@ -85,6 +86,22 @@ export default async function AcceptInvitePage({
               className="rounded-xl border border-brand-sage bg-surface-card px-3.5 py-3 text-sm font-normal text-ink outline-none focus:border-brand-green"
             />
           </label>
+
+          <div className="flex items-start gap-2 text-sm text-ink-muted">
+            <input
+              type="checkbox"
+              name="acceptedLegal"
+              value="true"
+              required
+              className="mt-0.5 h-4 w-4 accent-brand-green"
+            />
+            <span>
+              I agree to the{' '}
+              <LegalDocumentModal label="Terms of Sale" title="Terms of Sale" href="/terms" className="font-medium text-brand-green hover:underline" />
+              {' '}and{' '}
+              <LegalDocumentModal label="Privacy Policy" title="Privacy Policy" href="/privacy" className="font-medium text-brand-green hover:underline" />.
+            </span>
+          </div>
 
           <ProcessingButton type="submit" processingText="Setting password…" className="mt-2 rounded-xl bg-brand-green px-4 py-3 font-medium text-white">
             Set password and continue
