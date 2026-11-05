@@ -1,6 +1,7 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Fraunces } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import Providers from "./providers";
 import SiteLogoPattern from "@/components/site/SiteLogoPattern";
@@ -58,6 +59,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <SiteLogoPattern />
         <Providers>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   );
