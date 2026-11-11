@@ -1,6 +1,7 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
 'use client';
 
+import Image from 'next/image';
 import { useState } from 'react';
 
 export default function BrandMark({ className = 'h-9' }: { className?: string }) {
@@ -18,15 +19,14 @@ export default function BrandMark({ className = 'h-9' }: { className?: string })
   }
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <Image
       src="/images/logo.webp"
       alt="Tamak Bookshop"
-      width={1800}
-      height={432}
+      width={600}
+      height={144}
+      sizes="250px"
       loading="eager"
-      fetchPriority="high"
-      decoding="async"
+      quality={75}
       className={`w-auto shrink-0 object-contain ${className}`}
       onError={() => setFailed(true)}
     />

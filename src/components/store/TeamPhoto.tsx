@@ -1,6 +1,7 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
 'use client';
 
+import Image from 'next/image';
 import { useState } from 'react';
 
 function getInitials(name: string): string {
@@ -20,10 +21,13 @@ export default function TeamPhoto({ src, name }: { src: string; name: string }) 
   }
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <Image
       src={src}
       alt={name}
+      width={400}
+      height={400}
+      sizes="(max-width: 768px) 50vw, 25vw"
+      quality={75}
       className="aspect-square w-full rounded-md object-cover"
       onError={() => setFailed(true)}
     />

@@ -141,6 +141,14 @@ pnpm dlx supabase gen types typescript --linked > src/lib/database.types.ts
 
 Hosting is **Vercel** (one project, three domains: `tamakbookshop.com`, `www`, and `admin`) with Supabase as the backend. Step-by-step instructions, including DNS, Supabase URL settings, SMTP and email templates, are in `docs/04-DEPLOYMENT-AND-DOMAIN.md`.
 
+## Performance and security
+
+Supabase public book-cover images use Next.js image optimization with responsive AVIF/WebP output and a seven-day optimized-image cache. New cover uploads use unique storage paths so updated covers do not reuse an old optimized image.
+
+`next.config.ts` applies the site-wide Content Security Policy and browser security headers. The policy allows the integrations currently used by the app: Supabase, Cloudflare Turnstile and Vercel Analytics. Review and update it whenever a new external service is introduced.
+
+The production build script explicitly uses Webpack (`next build --webpack`) so the Vercel Analytics Next.js entrypoint resolves consistently in the current Next.js toolchain.
+
 ## Cookie and storage behaviour
 
 The site uses essential browser storage for authentication, cart operation, security checks and the cookie notice itself. It does not use advertising or optional analytics cookies and therefore does not require a separate cookie-acceptance choice before essential functionality can be used.

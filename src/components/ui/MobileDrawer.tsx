@@ -1,7 +1,7 @@
 // STRAYMUTANT.DEV — Tamak Bookshop
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 
 export default function MobileDrawer({
@@ -9,27 +9,57 @@ export default function MobileDrawer({
   onClose,
   children,
   restrictToMobile = true,
+  label = 'Navigation menu',
 }: {
   open: boolean;
   onClose: () => void;
   children: React.ReactNode;
   restrictToMobile?: boolean;
+  label?: string;
 }) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
   useEffect(() => {
-    document.body.style.overflow = open ? 'hidden' : '';
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    const previousOverflow = document.body.style.overflow;
+    if (open) {
+      if (!dialog.open) dialog.showModal();
+      document.body.style.overflow = 'hidden';
+      closeButtonRef.current?.focus();
+    } else {
+      if (dialog.open) dialog.close();
+      document.body.style.overflow = previousOverflow;
+    }
+
     return () => {
-      document.body.style.overflow = '';
+      if (dialog.open) dialog.close();
+      document.body.style.overflow = previousOverflow;
     };
   }, [open]);
 
   return (
-        <div
-      className={`fixed inset-0 z-50 ${restrictToMobile ? 'md:hidden' : ''} ${open ? '' : 'pointer-events-none'}`}
-      aria-hidden={!open}
+    <dialog
+      ref={dialogRef}
+      className={`fixed inset-0 z-50 m-0 h-dvh w-screen max-h-none max-w-none overflow-hidden border-0 bg-transparent p-0 ${restrictToMobile ? 'md:hidden' : ''}`}
+      aria-label={label}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          onClose();
+        }
+      }}
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
     >
-      
       <button
-        aria-label="Close menu"
+        type="button"
+        aria-label="Dismiss menu"
+        tabIndex={-1}
         onClick={onClose}
         className={`glass-backdrop absolute inset-0 bg-ink/40 transition-opacity duration-300 ${
           open ? 'opacity-100' : 'opacity-0'
@@ -41,12 +71,18 @@ export default function MobileDrawer({
         }`}
       >
         <div className="flex justify-end px-4 py-4">
-          <button onClick={onClose} aria-label="Close menu" className="text-ink">
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={onClose}
+            aria-label="Close menu"
+            className="text-ink"
+          >
             <X size={22} />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto px-6 pb-6">{children}</div>
       </div>
-    </div>
+    </dialog>
   );
 }

@@ -37,7 +37,7 @@ export default function UserMenuDrawer({
 
   return (
     <>
-      <MobileDrawer open={open} onClose={onClose} restrictToMobile={false}>
+      <MobileDrawer open={open} onClose={onClose} restrictToMobile={false} label="Account menu">
         <div className="mb-6 flex items-center gap-3">
           <UserAvatar fullName={fullName} className="h-10 w-10" asLink={false} />
           <span className="text-sm font-medium text-ink">{fullName}</span>

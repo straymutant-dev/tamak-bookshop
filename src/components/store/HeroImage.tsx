@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 
 export default function HeroImage({ className = '' }: { className?: string }) {
   const [failed, setFailed] = useState(false);
@@ -9,16 +10,15 @@ export default function HeroImage({ className = '' }: { className?: string }) {
   return (
     <div className={`relative h-full w-full ${failed ? 'rounded-lg bg-brand-green' : ''} ${className}`}>
       {!failed && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <Image
           src="/images/hero.webp"
           alt="Tamak Series Mathematics book"
-          width={413}
-          height={605}
+          fill
+          sizes="(max-width: 768px) 65vw, 42vw"
+          quality={75}
           loading="eager"
           fetchPriority="high"
-          decoding="async"
-          className="h-full w-full object-contain"
+          className="object-contain"
           onError={() => setFailed(true)}
         />
       )}

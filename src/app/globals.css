@@ -8,8 +8,8 @@
   --color-surface-card: #FFFFFF;
   --color-ink: #1F2933;
   --color-ink-muted: #6B7280;
-  --color-accent-terracotta: #C65D3B;
-  --color-accent-gold: #D8A84E;
+  --color-accent-terracotta: #B34D32;
+  --color-accent-gold: #946200;
   --color-border-beige: #E7E0D4;
 
   --font-sans: var(--font-geist-sans);
@@ -1426,29 +1426,19 @@ body {
   position: fixed;
   z-index: -1;
   inset: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
-  grid-auto-rows: 7rem;
-  justify-items: center;
-  align-items: center;
   overflow: hidden;
   pointer-events: none;
+  background-image: url("/images/logo-pattern.webp");
+  background-repeat: repeat;
+  background-size: 10rem 10rem;
+  opacity: 0.085;
 }
 
 .site-logo-pattern--auth {
   position: absolute;
 }
 
-.site-logo-pattern__item {
-  display: block;
-  aspect-ratio: 5564 / 1336;
-  background-image: url("/images/logo.webp");
-  background-repeat: no-repeat;
-  background-size: contain;
-  opacity: 0.085;
-}
-
-.site-logo-pattern--auth .site-logo-pattern__item {
+.site-logo-pattern--auth {
   filter: brightness(0) invert(1);
   opacity: 0.14;
 }

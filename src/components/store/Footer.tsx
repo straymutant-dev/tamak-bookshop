@@ -77,7 +77,7 @@ export default function Footer({
         </nav>
       </div>
 
-      <div className="border-t border-border-beige px-6 py-2 text-center text-[10px] text-ink-muted/70 sm:py-3 sm:text-xs">
+      <div className="border-t border-border-beige px-6 py-2 text-center text-xs text-ink-muted sm:py-3">
         <a href="tel:+233599118131" className="hover:text-brand-green">0599 118 131</a>
         {' · '}Kasoa, behind old ECG along the Nyanyanu road{' · '}Ghana, {new Date().getFullYear()}
       </div>
