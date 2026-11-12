@@ -1,26 +1,44 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import LegalDocumentModal from './LegalDocumentModal';
 
 const COOKIE_NOTICE_KEY = 'tamak-cookie-notice-accepted';
+const COOKIE_NOTICE_EVENT = 'tamak-cookie-notice-change';
+let dismissedInMemory = false;
+
+function subscribe(onChange: () => void) {
+  window.addEventListener('storage', onChange);
+  window.addEventListener(COOKIE_NOTICE_EVENT, onChange);
+  return () => {
+    window.removeEventListener('storage', onChange);
+    window.removeEventListener(COOKIE_NOTICE_EVENT, onChange);
+  };
+}
+
+function getSnapshot() {
+  if (dismissedInMemory) return false;
+
+  try {
+    return window.localStorage.getItem(COOKIE_NOTICE_KEY) !== 'true';
+  } catch {
+    return true;
+  }
+}
+
+function getServerSnapshot() {
+  return false;
+}
 
 export default function CookieNotice() {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    try {
-      setVisible(window.localStorage.getItem(COOKIE_NOTICE_KEY) !== 'true');
-    } catch {
-      setVisible(true);
-    }
-  }, []);
+  const visible = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   function accept() {
+    dismissedInMemory = true;
     try {
       window.localStorage.setItem(COOKIE_NOTICE_KEY, 'true');
     } finally {
-      setVisible(false);
+      window.dispatchEvent(new Event(COOKIE_NOTICE_EVENT));
     }
   }
 
