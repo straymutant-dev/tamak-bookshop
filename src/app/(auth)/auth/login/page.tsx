@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { login } from './actions';
 import PasswordInput from '@/components/ui/PasswordInput';
-import Turnstile from '@/components/ui/Turnstile';
+import HCaptcha from '@/components/ui/HCaptcha';
 import ProcessingButton from '@/components/ui/ProcessingButton';
 
 const INPUT_CLASS =
@@ -55,7 +55,7 @@ export default async function LoginPage({
             Forgot password?
           </Link>
 
-          <Turnstile />
+          <HCaptcha />
 
           <ProcessingButton type="submit" processingText="Signing in…" className="mt-2 rounded-xl bg-brand-green px-4 py-3 font-medium text-white">
             Sign in

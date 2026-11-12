@@ -30,11 +30,11 @@ export default function CookieNotice() {
     <aside
       role="region"
       aria-label="Cookie notice"
-      className="fixed bottom-3 left-3 right-3 z-[80] mx-auto max-w-xl rounded-2xl border border-border-beige bg-surface-card p-4 shadow-xl sm:bottom-5 sm:left-auto sm:right-5 sm:max-w-md"
+      className="fixed bottom-3 left-3 right-3 z-80 mx-auto max-w-xl rounded-2xl border border-border-beige bg-surface-card p-4 shadow-xl sm:bottom-5 sm:left-auto sm:right-5 sm:max-w-md"
     >
       <h2 className="font-serif text-lg text-brand-green">Your privacy matters</h2>
       <p className="mt-1.5 text-sm leading-5 text-ink-muted">
-        We use essential cookies and browser storage for sign-in, account security, Cloudflare Turnstile, and your shopping cart. We do not use advertising or optional analytics cookies.
+        We use essential cookies and browser storage for sign-in, account security, hCaptcha, and your shopping cart. We do not use advertising or optional analytics cookies.
       </p>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <LegalDocumentModal

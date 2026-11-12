@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import Turnstile, { TURNSTILE_ENABLED } from '@/components/ui/Turnstile';
+import HCaptcha, { HCAPTCHA_ENABLED } from '@/components/ui/HCaptcha';
 import { CAPTCHA_MESSAGE, isCaptchaError } from '@/lib/captcha';
 import { requestPhoneResetCode, verifyResetCode } from './actions';
 import ProcessingButton from '@/components/ui/ProcessingButton';
@@ -130,12 +130,12 @@ export default function ForgotPasswordPage() {
 
         <form action={handleResend} className="mt-4 flex flex-col gap-2">
           <input type="hidden" name="phone" value={codePhone} />
-          <Turnstile onToken={setResendToken} />
+          <HCaptcha onToken={setResendToken} />
           <ProcessingButton
             type="submit"
             isProcessing={loading}
             processingText="Resending…"
-            disabled={cooldown > 0 || (TURNSTILE_ENABLED && !resendToken)}
+            disabled={cooldown > 0 || (HCAPTCHA_ENABLED && !resendToken)}
             className="self-start text-sm font-medium text-brand-green disabled:text-ink-muted"
           >
             {cooldown > 0 ? `Resend code in ${cooldown}s` : 'Resend code'}
@@ -181,13 +181,13 @@ export default function ForgotPasswordPage() {
           />
         </label>
 
-        <Turnstile onToken={setCaptchaToken} />
+        <HCaptcha onToken={setCaptchaToken} />
 
         <ProcessingButton
           type="submit"
           isProcessing={loading}
           processingText="Sending…"
-          disabled={TURNSTILE_ENABLED && !captchaToken}
+          disabled={HCAPTCHA_ENABLED && !captchaToken}
           className="mt-2 rounded-md bg-brand-green px-4 py-2 font-medium text-white disabled:opacity-50"
         >
           {isEmail ? 'Send reset link' : 'Send code'}

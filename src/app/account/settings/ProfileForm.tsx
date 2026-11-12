@@ -5,7 +5,7 @@ import { useState, useTransition } from 'react';
 import PasswordInput from '@/components/ui/PasswordInput';
 import { updateProfile } from './actions';
 import { useToast } from '@/components/ui/ToastContext';
-import Turnstile, { TURNSTILE_ENABLED } from '@/components/ui/Turnstile';
+import HCaptcha, { HCAPTCHA_ENABLED } from '@/components/ui/HCaptcha';
 import ProcessingButton from '@/components/ui/ProcessingButton';
 
 export default function ProfileForm({
@@ -82,13 +82,13 @@ export default function ProfileForm({
         <PasswordInput name="currentPassword" required className="rounded-md border border-brand-sage px-3 py-2" />
       </label>
 
-      <Turnstile onToken={setCaptchaToken} />
+      <HCaptcha onToken={setCaptchaToken} />
 
       <ProcessingButton
         type="submit"
         isProcessing={isPending}
         processingText="Saving…"
-        disabled={TURNSTILE_ENABLED && !captchaToken}
+        disabled={HCAPTCHA_ENABLED && !captchaToken}
         className="mt-1 self-start rounded-md bg-brand-green px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
       >
         Save changes

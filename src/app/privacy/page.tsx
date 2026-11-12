@@ -45,7 +45,7 @@ export default function PrivacyPolicyPage() {
           </section>
           <section>
             <h2 className="mb-2 text-lg font-semibold text-ink">Cookies and browser storage</h2>
-            <p>We use essential cookies and browser storage to keep users signed in, maintain session security, remember shopping-cart contents, and provide Cloudflare Turnstile bot protection. These are necessary for website functionality; we do not set advertising cookies and currently use no optional analytics cookies.</p>
+            <p>We use essential cookies and browser storage to keep users signed in, maintain session security, remember shopping-cart contents, and provide hCaptcha bot protection. These are necessary for website functionality; we do not set advertising cookies and currently use no optional analytics cookies.</p>
           </section>
           <section>
             <h2 className="mb-2 text-lg font-semibold text-ink">Security</h2>

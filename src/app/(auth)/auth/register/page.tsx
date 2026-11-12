@@ -8,7 +8,7 @@ import { registerClient, registerVendor, verifyPhoneCode } from './actions';
 import PasswordInput from '@/components/ui/PasswordInput';
 import OtpInput from '@/components/ui/OtpInput';
 import PasswordStrengthMeter from '@/components/ui/PasswordStrengthMeter';
-import Turnstile, { TURNSTILE_ENABLED } from '@/components/ui/Turnstile';
+import HCaptcha, { HCAPTCHA_ENABLED } from '@/components/ui/HCaptcha';
 import ProcessingButton from '@/components/ui/ProcessingButton';
 import LegalDocumentModal from '@/components/ui/LegalDocumentModal';
 
@@ -177,12 +177,12 @@ export default function RegisterPage() {
           </span>
         </div>
 
-        <Turnstile onToken={setCaptchaToken} />
+        <HCaptcha onToken={setCaptchaToken} />
 
         <ProcessingButton
           type="submit"
           processingText="Sending code…"
-          disabled={!acceptedLegal || passwordMismatch || confirmPassword.length === 0 || (TURNSTILE_ENABLED && !captchaToken)}
+          disabled={!acceptedLegal || passwordMismatch || confirmPassword.length === 0 || (HCAPTCHA_ENABLED && !captchaToken)}
           className="mt-2 rounded-md bg-brand-green px-4 py-2 font-medium text-white disabled:opacity-50"
         >
           {accountType === 'client' ? 'Send verification code' : 'Send code and submit for approval'}
