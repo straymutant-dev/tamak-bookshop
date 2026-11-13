@@ -42,7 +42,13 @@ export async function GET(request: Request) {
     .eq('id', data.user.id)
     .single();
 
-  await supabase.from('profiles').update({ last_login_at: new Date().toISOString() }).eq('id', data.user.id);
+  await supabase
+    .from('profiles')
+    .update({
+      last_login_at: new Date().toISOString(),
+      ...(data.user.email ? { contact_email: data.user.email } : {}),
+    })
+    .eq('id', data.user.id);
 
   if (profile?.role === 'vendor') {
     const message =

@@ -2,12 +2,20 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import { CAPTCHA_MESSAGE, captchaTokenFrom, isCaptchaError } from '@/lib/captcha';
 import { normalizeGhanaPhone, toE164 } from '@/lib/phone';
 import { parseEmail } from '@/lib/email';
 
 const PHONE_ERROR = 'Enter a valid Ghana phone number, e.g. 024 123 4567.';
+const IDENTIFIER_ERROR = 'Enter a valid Ghana phone number or email address.';
+
+async function currentOrigin() {
+  const host = (await headers()).get('host') ?? '';
+  const protocol = host.includes('localhost') ? 'http' : 'https';
+  return `${protocol}://${host}`;
+}
 
 async function startRegistration(formData: FormData, role: 'client' | 'vendor') {
   if (String(formData.get('acceptedLegal') ?? '') !== 'true') {
@@ -17,44 +25,61 @@ async function startRegistration(formData: FormData, role: 'client' | 'vendor') 
   const password = String(formData.get('password') ?? '');
   const fullName = String(formData.get('fullName') ?? '').trim();
   const businessName = String(formData.get('businessName') ?? '').trim();
-  const rawPhone = String(formData.get('phone') ?? '');
+  const identifier = String(formData.get('identifier') ?? '').trim();
+  const isEmail = identifier.includes('@');
 
-  const e164 = toE164(rawPhone);
-  const local = normalizeGhanaPhone(rawPhone);
-  if (!e164 || !local) return { error: PHONE_ERROR };
-
-  // Optional: where receipts are emailed. Saved to the profile once the phone is verified.
-  let contactEmail: string | null = null;
-  try {
-    contactEmail = parseEmail(formData.get('contactEmail'));
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : 'Enter a valid email address' };
+  let email: string | null = null;
+  if (isEmail) {
+    try {
+      email = parseEmail(identifier);
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : IDENTIFIER_ERROR };
+    }
+    if (!email) return { error: IDENTIFIER_ERROR };
   }
+  const e164 = isEmail ? null : toE164(identifier);
+  const local = isEmail ? null : normalizeGhanaPhone(identifier);
+  if (!isEmail && (!e164 || !local)) return { error: PHONE_ERROR };
 
   const supabase = await createClient();
-
-  // Sends the SMS code. The user is not signed in until the code is verified.
-  const { data, error } = await supabase.auth.signUp({
-    phone: e164,
-    password,
-    options: {
-      data:
-        role === 'vendor'
-          ? { full_name: fullName, phone: local, role: 'vendor', business_name: businessName }
-          : { full_name: fullName, phone: local, role: 'client' },
-      captchaToken: captchaTokenFrom(formData),
-    },
-  });
+  const metadata =
+    role === 'vendor'
+      ? { full_name: fullName, ...(local ? { phone: local } : {}), role: 'vendor', business_name: businessName }
+      : { full_name: fullName, ...(local ? { phone: local } : {}), role: 'client' };
+  const captchaToken = captchaTokenFrom(formData);
+  const signupResult = email
+    ? await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: metadata,
+          captchaToken,
+          emailRedirectTo: `${await currentOrigin()}/auth/confirm`,
+        },
+      })
+    : e164
+      ? await supabase.auth.signUp({
+            phone: e164,
+            password,
+            options: { data: metadata, captchaToken },
+          })
+      : null;
+  if (!signupResult) return { error: IDENTIFIER_ERROR };
+  const { data, error } = signupResult;
 
   if (error || !data.user) {
     if (isCaptchaError(error?.message)) return { error: CAPTCHA_MESSAGE };
     if (/already (been )?registered|already exists/i.test(error?.message ?? '')) {
-      return { error: 'This number already has an account. Log in, or use "Forgot password" if you cannot remember it.' };
+      return {
+        error: `This ${email ? 'email address' : 'number'} already has an account. Log in, or use "Forgot password" if you cannot remember it.`,
+      };
     }
     return { error: error?.message ?? 'Registration failed' };
   }
 
-  return { success: true, phone: e164, email: contactEmail };
+  if (email) return { success: true, email };
+  if (e164) return { success: true, phone: e164 };
+  return { error: IDENTIFIER_ERROR };
 }
 
 export async function registerClient(formData: FormData) {

@@ -11,6 +11,7 @@ import PasswordStrengthMeter from '@/components/ui/PasswordStrengthMeter';
 import HCaptcha, { HCAPTCHA_ENABLED } from '@/components/ui/HCaptcha';
 import ProcessingButton from '@/components/ui/ProcessingButton';
 import LegalDocumentModal from '@/components/ui/LegalDocumentModal';
+import CheckEmailNotice from '@/components/ui/CheckEmailNotice';
 
 export default function RegisterPage() {
   const searchParams = useSearchParams();
@@ -19,11 +20,14 @@ export default function RegisterPage() {
   );
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [verifyPhone, setVerifyPhone] = useState<string | null>(null);
+  const [verifyEmail, setVerifyEmail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [captchaToken, setCaptchaToken] = useState('');
   const [acceptedLegal, setAcceptedLegal] = useState(false);
   const passwordMismatch = confirmPassword.length > 0 && password !== confirmPassword;
+  const isEmail = identifier.includes('@');
 
   async function handleSubmit(formData: FormData) {
     const action = accountType === 'client' ? registerClient : registerVendor;
@@ -34,6 +38,7 @@ export default function RegisterPage() {
       return;
     }
     if (result?.phone) setVerifyPhone(result.phone);
+    if (result?.email) setVerifyEmail(result.email);
   }
 
   async function handleVerify(formData: FormData) {
@@ -76,6 +81,10 @@ export default function RegisterPage() {
         </button>
       </div>
     );
+  }
+
+  if (verifyEmail) {
+    return <CheckEmailNotice email={verifyEmail} vendor={accountType === 'vendor'} />;
   }
 
   return (
@@ -129,9 +138,20 @@ export default function RegisterPage() {
         )}
 
         <label className="flex flex-col gap-1 text-sm">
-          Phone number
-          <input name="phone" type="tel" required placeholder="e.g. 024 123 4567" className="rounded-md border border-brand-sage px-3 py-2" />
-          <span className="text-xs text-ink-muted">We&rsquo;ll text you a code to verify this number.</span>
+          Phone number or email
+          <input
+            name="identifier"
+            type="text"
+            required
+            value={identifier}
+            onChange={(event) => setIdentifier(event.target.value)}
+            autoComplete="username"
+            placeholder="024 123 4567 or name@example.com"
+            className="rounded-md border border-brand-sage px-3 py-2"
+          />
+          <span className="text-xs text-ink-muted">
+            {isEmail ? 'We’ll email you a confirmation link.' : 'We’ll text you a code to verify your number.'}
+          </span>
         </label>
 
         <label className="flex flex-col gap-1 text-sm">
@@ -185,7 +205,11 @@ export default function RegisterPage() {
           disabled={!acceptedLegal || passwordMismatch || confirmPassword.length === 0 || (HCAPTCHA_ENABLED && !captchaToken)}
           className="mt-2 rounded-md bg-brand-green px-4 py-2 font-medium text-white disabled:opacity-50"
         >
-          {accountType === 'client' ? 'Send verification code' : 'Send code and submit for approval'}
+          {isEmail
+            ? 'Send confirmation email'
+            : accountType === 'client'
+              ? 'Send verification code'
+              : 'Send code and submit for approval'}
         </ProcessingButton>
 
         {accountType === 'vendor' && (
